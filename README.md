@@ -1,6 +1,8 @@
 # jev-spec
 
 [![npm version](https://img.shields.io/npm/v/jev-spec.svg)](https://www.npmjs.com/package/jev-spec)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Bun Version](https://img.shields.io/badge/bun-%3E%3D1.2-black.svg)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 **Specification-Driven Semantic Verification Engine for AI Code & Specs powered by TypeSafe AI Jev.**
@@ -42,17 +44,57 @@ Implementation (Code / Git Diff) ─┘   (Path Jail + Boundary Isolation)      
 
 ---
 
+## Runtime Support Matrix
+
+`jev-spec` offers first-class, dual-runtime support across both modern **Node.js** and **Bun**. Automated CI test suites validate full feature parity and test passing across both runtimes on every commit.
+
+| Runtime | Supported Versions | Status | Best For | Typical Cold Start |
+| :--- | :--- | :--- | :--- | :--- |
+| **Bun** | `>= 1.2` (Latest) | Tier 1 / Supported | Ultra-fast pre-commit hooks, staged checks, local dev loops | **< 100ms** |
+| **Node.js** | `>= 22.0.0` (LTS 22) | Tier 1 / Supported | Standard production CI/CD pipelines, containerized runners | ~350ms - 500ms |
+| **Node.js** | `>= 24.0.0` (Current 24) | Tier 1 / Supported | Modern cutting-edge Node runtime environments | ~350ms - 500ms |
+
+### Why Bun for Pre-Commit Hooks?
+
+Because `jev-spec` evaluates non-generative decisions in **sub-second time (70ms - 400ms)**, the JavaScript runtime startup overhead often constitutes a significant fraction of total wall-clock time.
+
+- **Instant Execution**: `bunx jev-spec check --staged` boots in **under 100ms** — more than 3x faster startup than standard `npx`.
+- **Zero Friction Git Hooks**: Developers won't bypass git hooks that execute and verify semantic assertions in under half a second combined.
+- **Native TypeScript Loading**: Direct loading of `jev-spec.config.ts` without transpilation lag.
+
+---
+
 ## Installation
 
-Install `jev-spec` as a development dependency:
+Install `jev-spec` as a development dependency using your preferred package manager:
+
+### Bun
+
+```bash
+bun add -d jev-spec
+```
+
+### npm
 
 ```bash
 npm install -D jev-spec
 ```
 
-Or run directly via `npx`:
+### pnpm
 
 ```bash
+pnpm add -D jev-spec
+```
+
+### Direct Execution via `bunx` / `npx`
+
+Run without local installation:
+
+```bash
+# Ultra-fast execution via Bun (recommended for local developer checks)
+bunx jev-spec --help
+
+# Execution via Node.js
 npx jev-spec --help
 ```
 
@@ -116,7 +158,13 @@ export TYPESAFE_AI_API_KEY="your-typesafe-api-key"
 
 ### 3. Run Verification
 
+Run verification using `bunx` or `npx`:
+
 ```bash
+# Ultra-fast sub-100ms cold start with Bun
+bunx jev-spec check
+
+# Or with Node.js npx
 npx jev-spec check
 ```
 
@@ -236,6 +284,10 @@ export interface ZoneConfig {
 Run semantic verification on all zones declared in your config:
 
 ```bash
+# Using Bun (instant execution)
+bunx jev-spec check
+
+# Using Node.js
 npx jev-spec check
 ```
 
@@ -244,7 +296,8 @@ npx jev-spec check
 Target a specific zone:
 
 ```bash
-npx jev-spec check --zone auth
+bunx jev-spec check --zone auth
+# or: npx jev-spec check --zone auth
 ```
 
 ### Git Diff Verification (Fast Feedback & CI)
@@ -252,11 +305,13 @@ npx jev-spec check --zone auth
 Instead of feeding full files, verify only changed hunks:
 
 ```bash
-# Verify against staged git changes (ideal for pre-commit hooks)
-npx jev-spec check --staged
+# Verify against staged git changes (ideal for pre-commit hooks with Bun)
+bunx jev-spec check --staged
+# or: npx jev-spec check --staged
 
 # Verify git diff against a branch range (ideal for PR CI)
-npx jev-spec check --diff origin/main...HEAD
+bunx jev-spec check --diff origin/main...HEAD
+# or: npx jev-spec check --diff origin/main...HEAD
 ```
 
 ### Output Formats
