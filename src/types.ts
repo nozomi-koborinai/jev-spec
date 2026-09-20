@@ -75,6 +75,7 @@ export interface ZoneConfig<R extends Record<string, AnyRubric> = Record<string,
 export interface JevClientConfig {
   readonly apiKey?: string;
   readonly baseUrl?: string;
+  readonly allowCustomBaseUrl?: boolean;
   readonly timeoutMs?: number;
   readonly mock?: boolean;
 }

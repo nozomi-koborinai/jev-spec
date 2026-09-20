@@ -2,6 +2,7 @@ import * as fs from 'node:fs/promises';
 import { loadConfig } from '../../config.js';
 import { runVerification } from '../../runner/engine.js';
 import { formatTerminalReport, formatMarkdownReport } from '../../runner/reporter.js';
+import { assertInsideRoot } from '../../context/path-security.js';
 
 export interface CheckCliOptions {
   readonly config?: string;
@@ -38,9 +39,10 @@ function resolveGitDiffOptions(options: CheckCliOptions) {
 
 export async function checkCommand(options: CheckCliOptions = {}): Promise<number> {
   try {
-    const config = await loadConfig(options.config, options.cwd);
+    const cwd = options.cwd ?? process.cwd();
+    const config = await loadConfig(options.config, cwd);
     const result = await runVerification(config, {
-      cwd: options.cwd,
+      cwd,
       zone: options.zone,
       gitDiff: resolveGitDiffOptions(options),
     });
@@ -57,7 +59,8 @@ export async function checkCommand(options: CheckCliOptions = {}): Promise<numbe
     }
 
     if (options.output) {
-      await fs.writeFile(options.output, `${outputText}\n`, 'utf-8');
+      const outputPath = await assertInsideRoot(cwd, options.output);
+      await fs.writeFile(outputPath, `${outputText}\n`, 'utf-8');
     } else {
       console.log(outputText);
     }

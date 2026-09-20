@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { GitDiffOptions, GitDiffResult, ParsedDiffFile, ParsedDiffHunk } from './types.js';
+import { assertGitRevision, GIT_DIFF_TIMEOUT_MS } from './git-revision.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -19,7 +20,8 @@ export async function extractGitDiff(
   if (options.staged) {
     args.push('--staged');
   } else if (options.diffRange) {
-    args.push(options.diffRange);
+    assertGitRevision(options.diffRange);
+    args.push('--', options.diffRange);
   }
 
   let stdout = '';
@@ -28,6 +30,7 @@ export async function extractGitDiff(
       cwd,
       maxBuffer: 10 * 1024 * 1024,
       encoding: 'utf-8',
+      timeout: GIT_DIFF_TIMEOUT_MS,
     });
     stdout = result.stdout ?? '';
   } catch (error: unknown) {

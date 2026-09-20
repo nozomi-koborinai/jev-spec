@@ -3,6 +3,7 @@ import * as fs from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { createJiti } from 'jiti';
 import type { JevSpecConfig } from './types.js';
+import { assertInsideRoot } from './context/path-security.js';
 
 export const DEFAULT_CONFIG_FILENAMES = [
   'jev-spec.config.ts',
@@ -46,11 +47,14 @@ export async function loadConfig(
   configPath?: string,
   cwd: string = process.cwd()
 ): Promise<JevSpecConfig> {
-  const resolvedPath = configPath
-    ? path.isAbsolute(configPath)
-      ? configPath
-      : path.resolve(cwd, configPath)
-    : await findConfigFile(cwd);
+  let resolvedPath: string | null;
+
+  if (configPath) {
+    resolvedPath = await assertInsideRoot(cwd, configPath);
+  } else {
+    const found = await findConfigFile(cwd);
+    resolvedPath = found ? await assertInsideRoot(cwd, found) : null;
+  }
 
   if (!resolvedPath) {
     throw new Error(

@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { assertInsideRoot } from '../context/path-security.js';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { gfm } from 'micromark-extension-gfm';
@@ -282,7 +283,7 @@ export async function loadSpec(
   cwd: string = process.cwd(),
   filter?: SpecFilter
 ): Promise<ParsedSpec> {
-  const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
+  const absolutePath = await assertInsideRoot(cwd, filePath);
   const rawContent = await fs.readFile(absolutePath, 'utf-8');
   const prefixes = resolveRequirementPrefixes(filter);
   const tree = parseMarkdownAst(rawContent);

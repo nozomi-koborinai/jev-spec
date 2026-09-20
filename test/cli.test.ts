@@ -29,10 +29,11 @@ describe('CLI check command', () => {
   });
 
   it('writes json output to a file when --output is set', async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jev-spec-cli-out-'));
+    const pkgRoot = path.resolve(new URL('.', import.meta.url).pathname, '../..');
+    const tempDir = await fs.mkdtemp(path.join(pkgRoot, 'test', '.tmp-cli-out-'));
     const outputPath = path.join(tempDir, 'result.json');
     const exitCode = await checkCommand({
-      cwd: path.resolve(new URL('.', import.meta.url).pathname, '../..'),
+      cwd: pkgRoot,
       config: 'test/fixtures/sample.config.ts',
       format: 'json',
       output: outputPath,
@@ -41,6 +42,7 @@ describe('CLI check command', () => {
     expect(exitCode).toBe(0);
     const written = await fs.readFile(outputPath, 'utf-8');
     expect(written).toContain('"passed": true');
+    await fs.rm(tempDir, { recursive: true, force: true });
   });
 
   it('returns exit code 2 when API key is missing and mock mode is not enabled', async () => {

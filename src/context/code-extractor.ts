@@ -3,6 +3,12 @@ import * as path from 'node:path';
 import type { CodeExtractionOptions } from './types.js';
 import { resolveGlobPatterns, matchesGlobPatterns } from './glob-matcher.js';
 import { extractGitDiff, formatDiffContext } from './git-diff.js';
+import {
+  assertInsideRoot,
+  MAX_FILE_COUNT,
+  MAX_FILE_SIZE_BYTES,
+  PathSecurityError,
+} from './path-security.js';
 
 export interface CodeFileContext {
   readonly relativePath: string;
@@ -21,6 +27,29 @@ export interface ExtractedCodeContext {
 
 const DEFAULT_MAX_CHARS = 120_000;
 
+async function readFileWithinLimits(
+  absolutePath: string,
+  relativePath: string
+): Promise<CodeFileContext | null> {
+  const stat = await fs.stat(absolutePath);
+  if (!stat.isFile()) {
+    return null;
+  }
+  if (stat.size > MAX_FILE_SIZE_BYTES) {
+    return null;
+  }
+
+  const content = await fs.readFile(absolutePath, 'utf-8');
+  const lines = content.split('\n');
+  return {
+    relativePath,
+    absolutePath,
+    content,
+    lineCount: lines.length,
+    source: 'file',
+  };
+}
+
 /**
  * Resolves paths and extracts code content from files or git diffs.
  */
@@ -36,22 +65,23 @@ export async function extractCodeContext(
   }
 
   const resolvedPaths = await resolveGlobPatterns(filePatterns, cwd);
+  if (resolvedPaths.length > MAX_FILE_COUNT) {
+    throw new PathSecurityError(
+      `File count ${resolvedPaths.length} exceeds maximum of ${MAX_FILE_COUNT} per zone`
+    );
+  }
+
   const files: CodeFileContext[] = [];
 
   for (const relPath of resolvedPaths) {
-    const absolutePath = path.resolve(cwd, relPath);
     try {
-      const content = await fs.readFile(absolutePath, 'utf-8');
-      const lines = content.split('\n');
-      files.push({
-        relativePath: relPath,
-        absolutePath,
-        content,
-        lineCount: lines.length,
-        source: 'file',
-      });
+      const absolutePath = await assertInsideRoot(cwd, relPath);
+      const fileContext = await readFileWithinLimits(absolutePath, relPath);
+      if (fileContext) {
+        files.push(fileContext);
+      }
     } catch {
-      // Skip unreadable paths
+      // Skip unreadable or out-of-root paths
     }
   }
 
@@ -67,13 +97,27 @@ async function extractFromGitDiff(
   const diff = await extractGitDiff(options.gitDiff!, cwd, options.contextLines);
   const matched = diff.files.filter((file) => matchesGlobPatterns(file.relativePath, filePatterns));
 
-  const files: CodeFileContext[] = matched.map((file) => ({
-    relativePath: file.relativePath,
-    absolutePath: path.resolve(cwd, file.relativePath),
-    content: file.formattedDiff,
-    lineCount: file.hunks.reduce((acc, hunk) => acc + hunk.lineCount, 0),
-    source: 'diff' as const,
-  }));
+  if (matched.length > MAX_FILE_COUNT) {
+    throw new PathSecurityError(
+      `Diff file count ${matched.length} exceeds maximum of ${MAX_FILE_COUNT} per zone`
+    );
+  }
+
+  const files: CodeFileContext[] = [];
+  for (const file of matched) {
+    try {
+      const absolutePath = await assertInsideRoot(cwd, file.relativePath);
+      files.push({
+        relativePath: file.relativePath,
+        absolutePath,
+        content: file.formattedDiff,
+        lineCount: file.hunks.reduce((acc, hunk) => acc + hunk.lineCount, 0),
+        source: 'diff' as const,
+      });
+    } catch {
+      // Skip diff entries outside project root
+    }
+  }
 
   if (files.length === 0 && diff.rawDiff.trim()) {
     return {
@@ -121,21 +165,25 @@ export async function extractCodeFromPaths(
   filePaths: readonly string[],
   cwd: string = process.cwd()
 ): Promise<ExtractedCodeContext> {
+  if (filePaths.length > MAX_FILE_COUNT) {
+    throw new PathSecurityError(
+      `File count ${filePaths.length} exceeds maximum of ${MAX_FILE_COUNT} per zone`
+    );
+  }
+
   const files: CodeFileContext[] = [];
 
   for (const relPath of filePaths) {
-    const absolutePath = path.isAbsolute(relPath) ? relPath : path.resolve(cwd, relPath);
     try {
-      const content = await fs.readFile(absolutePath, 'utf-8');
-      const lines = content.split('\n');
-      files.push({
-        relativePath: path.relative(cwd, absolutePath),
-        absolutePath,
-        content,
-        lineCount: lines.length,
-        source: 'file',
-      });
-    } catch {
+      const absolutePath = await assertInsideRoot(cwd, relPath);
+      const fileContext = await readFileWithinLimits(absolutePath, relPath);
+      if (fileContext) {
+        files.push(fileContext);
+      }
+    } catch (error: unknown) {
+      if (error instanceof PathSecurityError) {
+        throw error;
+      }
       // Skip unreadable paths
     }
   }

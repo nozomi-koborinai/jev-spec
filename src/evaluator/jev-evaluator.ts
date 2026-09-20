@@ -13,6 +13,7 @@ import type {
   ScoreRubric,
   JevClientConfig,
 } from '../types.js';
+import { buildSecureEvaluationState } from './prompt-security.js';
 
 export interface EvaluationInput {
   readonly specContext: string;
@@ -39,6 +40,8 @@ export class JevSpecConfigurationError extends Error {
 const MISSING_API_KEY_MESSAGE =
   'API key is required. Set TYPESAFE_AI_API_KEY (or TYPESAFE_API_KEY) environment variable, or configure client.apiKey in jev-spec.config.';
 
+const DEFAULT_BASE_URL = 'https://api.typesafe.ai';
+
 /**
  * Resolves API key from config or environment variables.
  */
@@ -53,6 +56,27 @@ export function resolveApiKey(config?: JevClientConfig): string | undefined {
     return process.env.TYPESAFE_API_KEY.trim();
   }
   return undefined;
+}
+
+/**
+ * Resolves the API base URL, blocking custom endpoints unless explicitly allowed.
+ */
+export function resolveBaseUrl(config?: JevClientConfig): string {
+  const envBaseUrl = process.env.TYPESAFE_AI_BASE_URL?.trim();
+  const configBaseUrl = config?.baseUrl?.trim();
+  const requested = configBaseUrl || envBaseUrl;
+
+  if (!requested || requested === DEFAULT_BASE_URL) {
+    return DEFAULT_BASE_URL;
+  }
+
+  if (!config?.allowCustomBaseUrl) {
+    throw new JevSpecConfigurationError(
+      `Custom baseUrl "${requested}" is blocked. Set client.allowCustomBaseUrl: true to opt in.`
+    );
+  }
+
+  return requested;
 }
 
 /**
@@ -145,18 +169,16 @@ export class LiveJevEvaluator implements JevEvaluator {
   constructor(config?: JevClientConfig) {
     this.client = new TypeSafeClient({
       apiKey: resolveApiKey(config),
-      baseURL: config?.baseUrl ?? process.env.TYPESAFE_AI_BASE_URL,
+      baseURL: resolveBaseUrl(config),
       timeout: config?.timeoutMs ?? 10_000,
     });
   }
 
   async evaluate(input: EvaluationInput): Promise<Record<string, AnyRubricResult>> {
     const questions = this.buildQuestions(input.rubrics);
+    const secureState = buildSecureEvaluationState(input.specContext, input.codeContext);
     const response = await this.client.systemOne({
-      state: {
-        specification: input.specContext,
-        implementation: input.codeContext,
-      },
+      state: secureState,
       questions,
     });
 
