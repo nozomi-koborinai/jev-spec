@@ -11,16 +11,28 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [22, 24]
+        include:
+          - runtime: node
+            version: 22
+          - runtime: node
+            version: 24
+          - runtime: bun
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js ${{ matrix.version }}
+        if: matrix.runtime == 'node'
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ matrix.version }}
           cache: npm
+
+      - name: Setup Bun
+        if: matrix.runtime == 'bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Install dependencies
         run: npm ci
@@ -28,5 +40,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test
+      - name: Test (Node)
+        if: matrix.runtime == 'node'
         run: npm test
+
+      - name: Test (Bun)
+        if: matrix.runtime == 'bun'
+        run: bun run pretest && bun test

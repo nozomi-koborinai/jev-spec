@@ -2,8 +2,13 @@ import { describe, test as it, after } from 'node:test';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect } from './test-utils.js';
 import { checkCommand } from '../src/cli/commands/check.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const pkgRoot = path.resolve(__dirname, '../..');
 
 describe('CLI check command', () => {
   const originalApiKey = process.env.TYPESAFE_AI_API_KEY;
@@ -29,7 +34,6 @@ describe('CLI check command', () => {
   });
 
   it('writes json output to a file when --output is set', async () => {
-    const pkgRoot = path.resolve(new URL('.', import.meta.url).pathname, '../..');
     const tempDir = await fs.mkdtemp(path.join(pkgRoot, 'test', '.tmp-cli-out-'));
     const outputPath = path.join(tempDir, 'result.json');
     const exitCode = await checkCommand({
@@ -67,7 +71,7 @@ describe('CLI check command', () => {
     );
 
     const exitCode = await checkCommand({
-      cwd: path.resolve(new URL('.', import.meta.url).pathname, '../..'),
+      cwd: pkgRoot,
       config: configPath,
       format: 'json',
     });

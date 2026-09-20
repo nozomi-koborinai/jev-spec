@@ -1,0 +1,4 @@
+[test]
+# Run compiled node:test suites only. Bun's native TS runner resolves
+# import.meta.url differently for files under test/, which breaks fixture paths.
+root = "./dist-test/test"
