@@ -1,9 +1,12 @@
 # jev-spec
 
 [![npm version](https://img.shields.io/npm/v/jev-spec.svg)](https://www.npmjs.com/package/jev-spec)
+[![CI](https://img.shields.io/github/actions/workflow/status/nozomi-koborinai/jev-spec/ci.yml?branch=main&label=CI)](https://github.com/nozomi-koborinai/jev-spec/actions/workflows/ci.yml)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Bun Version](https://img.shields.io/badge/bun-%3E%3D1.2-black.svg)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
+<p align="center"><img src="./assets/hero.png" alt="jev-spec - Specification-Driven Semantic Verification Engine for AI Code & Specs" width="100%" /></p>
 
 **Specification-Driven Semantic Verification Engine for AI Code & Specs powered by TypeSafe AI Jev.**
 
@@ -11,42 +14,61 @@
 
 ## Why jev-spec?
 
-In modern Specification-Driven Development (SDD) and AI-assisted workflows (Cursor, Claude Code, GitHub Copilot, Codex), structural linters like `contextlint` deterministically enforce markdown schemas, heading hierarchies, cross-references, and requirement IDs. However, static linters cannot bridge the **semantic gap**:
+In Specification-Driven Development (SDD) and AI-assisted workflows (Cursor, Claude Code, GitHub Copilot), structural linters deterministically enforce markdown schemas, heading hierarchies, cross-references, and requirement IDs. However, static linters cannot bridge the **semantic gap**:
 
 - *Does `src/auth/session.ts` truly satisfy the acceptance criteria stipulated in `REQ-AUTH-02`?*
 - *Did the AI assistant silently introduce unrequested side effects, bypass headers, or undocumented endpoints?*
-- *Is this pull request an actual feature-complete implementation or an optimistic stub?*
+- *Is this pull request an actual feature-complete implementation or an optimistic stub with placeholder comments?*
 
-### The Problem with Generative LLMs (System 2)
+### The Generative LLM Trap (System 2)
 
-Historically, evaluating semantic compliance required prompting slow, expensive generative Large Language Models (LLMs) such as GPT-4 or Claude 3.5 Sonnet:
+Evaluating semantic compliance historically required prompting autoregressive generative models (GPT-4, Claude 3.5 Sonnet):
 
-- **Slow**: Sequential token generation takes **5 to 15 seconds** per review pass.
-- **Costly**: Autoregressive decoding burns **$0.05 to $0.20+** per file review.
-- **Non-Deterministic**: Susceptible to hallucinations, formatting variances, and subjective reasoning drift.
-- **High Friction**: Too slow for pre-commit hooks, staged diff checks, or fast CI gates.
+- **High Latency**: Sequential token generation takes **5 to 15 seconds** per file review.
+- **Prohibitive Cost**: Autoregressive decoding burns **$0.05 to $0.20+** per file evaluation.
+- **Non-Deterministic Drift**: Fragile prompt templates, hallucinated justifications, and subjective variance.
+- **Workflow Friction**: Too slow for pre-commit git hooks, staged diff checks, or fast blocking CI gates.
 
 ### The Jev Advantage: Non-Generative System 1 Decision Model
 
-`jev-spec` is built from the ground up on **TypeSafe AI Jev**, the industry's first non-generative **System 1 decision model**:
+In optical physics, a **collimator** takes a diffuse, scattered beam of light and narrows it into parallel, focused rays. `jev-spec` acts as a semantic collimator: taking the diffuse, high-entropy output of AI coding models and focusing it into mathematically calibrated, deterministic verification decisions.
 
-- **Ultra-Fast & Sub-Second**: Single forward pass in **70ms to 400ms**.
-- **Radical Cost Reduction**: **$0.042 per million input tokens** (output tokens are free), over 100x cheaper than generative review prompts.
+Powered by **TypeSafe AI Jev**, `jev-spec` is built from the ground up on a non-generative **System 1 decision model**:
+
+- **Sub-400ms Verification**: Single forward-pass evaluation in **70ms to 400ms**.
+- **Radical Cost Efficiency**: **$0.042 per million input tokens** (output tokens are free) — over 100x cheaper than generative review prompts.
 - **Calibrated Verification**: Evaluates typed decision primitives trained with Reinforcement Learning for Calibrated Decisions (RLCD). A predicted probability of 0.85 means the proposition is empirically true in 85% of cases.
-- **Parallel Sampler**: Simultaneously evaluates multiple boolean propositions (`noul`), discrete categorical distributions (`choice`), and ordinal rubrics (`score`) in a single forward pass over shared specification and implementation context.
-- **Deterministic Assertions**: Run numerical assertions (`minProbability`, `maxProbability`, `allowedChoices`, `minScore`) directly in your terminal, pre-commit hooks, or CI pipeline.
+- **Parallel Sampler**: Evaluates boolean propositions (`noul`), categorical distributions (`choice`), and ordinal rubrics (`score`) in a single forward pass over shared specification and implementation context.
+- **Deterministic Numerical Assertions**: Test semantic assertions (`minProbability`, `maxProbability`, `allowedChoices`, `minScore`) directly in your terminal, pre-commit hooks, or CI pipeline with standard exit codes.
+
+| Capability | Generative Review (System 2) | jev-spec + Jev (System 1) |
+| :--- | :--- | :--- |
+| **Execution Speed** | 5,000ms – 15,000ms per file | **70ms – 400ms** (single forward pass) |
+| **Token Pricing** | ~$3.00 – $15.00 / MTok | **$0.042 / MTok** (output tokens free) |
+| **Output Type** | Unstructured prose text | **Calibrated probabilities & categorical distributions** |
+| **Determinism** | Subjective reasoning & formatting drift | **Numerical thresholds (`minProbability: 0.85`)** |
+| **Git Hooks & Fast CI** | Impractical (breaks developer flow) | **Instant (<100ms startup with Bun)** |
+
+---
+
+## Architecture Overview
 
 ```text
 Specification (Markdown / MDX) ──┐
                                  ├─► [jev-spec Engine] ─► Jev System 1 ─► Calibrated Decisions & Assertions
-Implementation (Code / Git Diff) ─┘   (Path Jail + Boundary Isolation)       (Pass / Fail in <400ms)
+Implementation (Code / Git Diff) ─┘   (Root Jail + Boundary Isolation)       (Pass / Fail in <400ms)
 ```
+
+1. **Context Extraction**: Parses markdown specifications using `mdast` (filtering by heading, tag, or requirement ID) and extracts source files or staged git diff hunks.
+2. **Security Isolation**: Enforces workspace root jails, symlink escape checks, git revision argument sanitization, and anti-prompt-injection boundary tagging.
+3. **Parallel Forward Pass**: Transmits shared context and rubrics to the Jev decision engine in a single batch request.
+4. **Assertion Evaluation**: Validates returned calibrated probabilities and scores against numerical thresholds, exiting with deterministic codes for CI/CD automation.
 
 ---
 
 ## Runtime Support Matrix
 
-`jev-spec` offers first-class, dual-runtime support across both modern **Node.js** and **Bun**. Automated CI test suites validate full feature parity and test passing across both runtimes on every commit.
+`jev-spec` provides first-class dual-runtime support across modern **Node.js** and **Bun**. Every pull request is validated against both runtimes across all supported versions in automated CI.
 
 | Runtime | Supported Versions | Status | Best For | Typical Cold Start |
 | :--- | :--- | :--- | :--- | :--- |
@@ -56,55 +78,38 @@ Implementation (Code / Git Diff) ─┘   (Path Jail + Boundary Isolation)      
 
 ### Why Bun for Pre-Commit Hooks?
 
-Because `jev-spec` evaluates non-generative decisions in **sub-second time (70ms - 400ms)**, the JavaScript runtime startup overhead often constitutes a significant fraction of total wall-clock time.
+Because Jev evaluates decisions in **sub-second time (70ms - 400ms)**, runtime startup overhead represents the majority of wall-clock time in local developer workflows:
 
-- **Instant Execution**: `bunx jev-spec check --staged` boots in **under 100ms** — more than 3x faster startup than standard `npx`.
-- **Zero Friction Git Hooks**: Developers won't bypass git hooks that execute and verify semantic assertions in under half a second combined.
-- **Native TypeScript Loading**: Direct loading of `jev-spec.config.ts` without transpilation lag.
-
----
-
-## Installation
-
-Install `jev-spec` as a development dependency using your preferred package manager:
-
-### Bun
-
-```bash
-bun add -d jev-spec
-```
-
-### npm
-
-```bash
-npm install -D jev-spec
-```
-
-### pnpm
-
-```bash
-pnpm add -D jev-spec
-```
-
-### Direct Execution via `bunx` / `npx`
-
-Run without local installation:
-
-```bash
-# Ultra-fast execution via Bun (recommended for local developer checks)
-bunx jev-spec --help
-
-# Execution via Node.js
-npx jev-spec --help
-```
+- **Instant Execution**: `bunx jev-spec check --staged` starts in **under 100ms** — more than 3x faster than traditional runner startups.
+- **Zero-Friction Git Hooks**: Developers can run full semantic assertions on staged changes in under half a second combined.
+- **Native TypeScript Execution**: Loads `jev-spec.config.ts` directly without transpilation overhead.
 
 ---
 
 ## Quickstart
 
-### 1. Initialize Configuration
+Get up and running with `jev-spec` in three steps:
 
-Create `jev-spec.config.ts` in your project root:
+### 1. Install jev-spec
+
+Install `jev-spec` as a development dependency using your package manager of choice:
+
+```bash
+# Bun (recommended for local developer loops)
+bun add -d jev-spec
+
+# npm
+npm install -D jev-spec
+
+# pnpm
+pnpm add -D jev-spec
+```
+
+*Or run directly without installation via `bunx jev-spec` or `npx jev-spec`.*
+
+### 2. Configure Zones & Rubrics
+
+Create `jev-spec.config.ts` in your repository root:
 
 ```typescript
 import { defineConfig, noul, choice, score } from 'jev-spec';
@@ -130,9 +135,9 @@ export default defineConfig({
           insecure: 'Missing verification, weak crypto, or tokens logged',
         }),
         implementationCompleteness: score('Degree of completeness', [
-          'Stub',
-          'Basic',
-          'Feature Complete',
+          'Stub: Empty function signatures or TODO comments',
+          'Partial: Happy path implemented, error handling missing',
+          'Feature Complete: Complete implementation meeting all criteria',
         ]),
       },
       assertions: {
@@ -146,39 +151,33 @@ export default defineConfig({
 });
 ```
 
-### 2. Set Up API Key
+### 3. Run Semantic Verification
 
-Obtain an API key from [TypeSafe AI](https://typesafe.ai) and export it:
+Set your API key and execute verification:
 
 ```bash
 export TYPESAFE_AI_API_KEY="your-typesafe-api-key"
-```
 
-*(Alternatively, set `TYPESAFE_API_KEY` or pass `client: { mock: true }` for local offline testing).*
-
-### 3. Run Verification
-
-Run verification using `bunx` or `npx`:
-
-```bash
-# Ultra-fast sub-100ms cold start with Bun
+# Fast execution with Bun
 bunx jev-spec check
 
 # Or with Node.js npx
 npx jev-spec check
 ```
 
+*(Note: pass `client: { mock: true }` in your config for offline testing and local CI simulation without an API key).*
+
 ---
 
-## Configuration Guide (`jev-spec.config.ts`)
+## Configuration DSL Reference
 
-`jev-spec` configs export a `defineConfig(...)` declaration containing client options and one or more verification **zones**.
+`jev-spec` configurations use the `defineConfig(...)` helper for full TypeScript type inference and auto-completion.
 
 ### Core DSL Primitives
 
 #### `noul(question: string): NoulRubric`
 
-A **noul** is a calibrated boolean proposition evaluated in $[0, 1]$. Jev estimates the empirical probability that the statement is true given the specification and code.
+A **noul** is a calibrated boolean proposition evaluated in $[0, 1]$. Jev estimates the empirical probability that the statement is true given the specification context and implementation code.
 
 ```typescript
 rubrics: {
@@ -191,13 +190,13 @@ assertions: {
 }
 ```
 
-- **Assertions**:
-  - `minProbability?: number`: Minimum accepted probability threshold ($[0, 1]$).
+- **Assertion Options**:
+  - `minProbability?: number`: Minimum acceptable probability threshold ($[0, 1]$).
   - `maxProbability?: number`: Maximum tolerated probability threshold ($[0, 1]$).
 
 #### `choice<T extends string>(description: string, options: Record<T, string>): ChoiceRubric<T>`
 
-A **choice** rubric represents a discrete categorical distribution over a set of mutually exclusive options.
+A **choice** rubric represents a discrete categorical distribution across mutually exclusive options.
 
 ```typescript
 rubrics: {
@@ -216,10 +215,10 @@ assertions: {
 }
 ```
 
-- **Assertions**:
-  - `allowedChoices?: readonly T[]`: List of acceptable selected choices.
-  - `blockedChoices?: readonly T[]`: Disallowed choices (fails if chosen).
-  - `minConfidence?: number`: Minimum prediction confidence for the chosen option ($[0, 1]$).
+- **Assertion Options**:
+  - `allowedChoices?: readonly T[]`: Permitted choice keys.
+  - `blockedChoices?: readonly T[]`: Forbidden choice keys (fails if selected).
+  - `minConfidence?: number`: Minimum required confidence score for the selected choice ($[0, 1]$).
 
 #### `score(description: string, levels: readonly string[]): ScoreRubric`
 
@@ -231,7 +230,7 @@ rubrics: {
     'Stub: Function signatures with empty bodies or TODO comments',
     'Partial: Happy path implemented, error handling or edge cases missing',
     'Feature Complete: Happy path and error branches fully handled',
-    'Production Ready: Complete implementation with logging, validation, and defensive bounds',
+    'Production Ready: Complete implementation with validation and defensive bounds',
   ]),
 },
 assertions: {
@@ -242,12 +241,12 @@ assertions: {
 }
 ```
 
-- **Assertions**:
-  - `minScore?: number`: Minimum score index.
-  - `maxScore?: number`: Maximum score index.
-  - `minConfidence?: number`: Minimum confidence metric.
+- **Assertion Options**:
+  - `minScore?: number`: Minimum fractional score index.
+  - `maxScore?: number`: Maximum fractional score index.
+  - `minConfidence?: number`: Minimum confidence metric ($[0, 1]$).
 
-### Zone Definition Reference
+### Zone Configuration Interface
 
 ```typescript
 export interface ZoneConfig {
@@ -279,51 +278,48 @@ export interface ZoneConfig {
 
 ## CLI Usage
 
-### Basic Check
+### Check All Zones
 
-Run semantic verification on all zones declared in your config:
+Run semantic verification across all zones declared in your configuration:
 
 ```bash
-# Using Bun (instant execution)
+# Instant check via Bun
 bunx jev-spec check
 
-# Using Node.js
+# Check via Node.js
 npx jev-spec check
 ```
 
-### Zone Filtering
+### Targeted Zone Verification
 
-Target a specific zone:
+Execute verification against a single zone:
 
 ```bash
 bunx jev-spec check --zone auth
-# or: npx jev-spec check --zone auth
 ```
 
-### Git Diff Verification (Fast Feedback & CI)
+### Git Diff Verification (Pre-commit Hooks & CI)
 
-Instead of feeding full files, verify only changed hunks:
+Verify semantic compliance against changed lines instead of entire source files:
 
 ```bash
-# Verify against staged git changes (ideal for pre-commit hooks with Bun)
+# Verify against staged git changes (ideal for pre-commit git hooks)
 bunx jev-spec check --staged
-# or: npx jev-spec check --staged
 
-# Verify git diff against a branch range (ideal for PR CI)
+# Verify git diff against a branch range (ideal for pull request CI)
 bunx jev-spec check --diff origin/main...HEAD
-# or: npx jev-spec check --diff origin/main...HEAD
 ```
 
 ### Output Formats
 
 ```bash
-# Terminal report (default)
+# Formatted terminal report (default)
 npx jev-spec check --format terminal
 
-# Markdown summary (for PR comments / GitHub Step Summaries)
+# Markdown report (ideal for GitHub Step Summaries and PR comments)
 npx jev-spec check --format markdown --output jev-spec-report.md
 
-# Machine-readable JSON output (for custom tooling)
+# Machine-readable JSON output (for custom reporting pipelines)
 npx jev-spec check --format json --output result.json
 ```
 
@@ -335,23 +331,22 @@ npx jev-spec check --format json --output result.json
 
 ---
 
-## Security & CI Best Practices
+## CI/CD Integration & Security Best Practices
 
-`jev-spec` is designed for safety in local development and automated CI/CD pipelines.
+`jev-spec` is engineered for safe execution in automated CI/CD environments and developer workstations.
 
 ### CI Threat Model: Fork PRs & Secret Handling
 
 > [!WARNING]
-> **DO NOT** expose `TYPESAFE_AI_API_KEY` directly to untrusted external pull requests (`pull_request` event on public repositories)!
+> **DO NOT** expose `TYPESAFE_AI_API_KEY` to untrusted external pull requests (`pull_request` event on public repositories)!
 
-1. **Untrusted Code & Configurations**:
-   In public repositories, any contributor can submit a pull request modifying `jev-spec.config.ts`, specifications, or code. Executing attacker-controlled code with access to sensitive credentials introduces secret exfiltration risks.
-2. **Safe CI Patterns**:
-   - **Offline Mock in PRs**: Run PR checks using mock mode (`client.mock = true`), verifying configuration validity, spec parsing, and glob matching without exposing API credentials.
+1. **Untrusted Code Risk**: In public repositories, pull requests can modify `jev-spec.config.ts`, specifications, or code. Executing untrusted code with access to sensitive credentials introduces secret exfiltration vectors.
+2. **Recommended Defense-in-Depth Patterns**:
+   - **Offline Mock Mode for Fork PRs**: Run PR checks using mock mode (`client.mock = true`), validating configuration structure, spec parsing, and glob matching without exposing API credentials.
    - **Environment Protection**: For live verification on external PRs, use GitHub Actions Environment Approvals so maintainers review the diff before secrets are unlocked.
-   - **Main Branch Verification**: Run live semantic verification on `push` to `main` or trusted internal release branches.
+   - **Main Branch Verification**: Run live semantic verification on `push` to `main` and trusted internal release branches.
 
-#### Recommended GitHub Actions Workflow
+### Recommended GitHub Actions Workflow
 
 ```yaml
 name: Specification Semantic Gate
@@ -403,11 +398,11 @@ jobs:
 
 ---
 
-### Built-in Security Controls
+## Built-in Security Controls
 
-`jev-spec` includes hardened controls protecting against common supply-chain and runner exploitation vectors (Security Hardening S-01 to S-05):
+`jev-spec` implements comprehensive defensive security controls (Hardening S-01 through S-05) protecting developer machines and CI runners:
 
-| Control | Description |
+| Security Control | Implementation Guarantee |
 | :--- | :--- |
 | **Path Traversal & Root Jail** | Workspace paths are strictly validated using realpath resolution (`assertInsideRoot()`). Absolute paths outside cwd, `..` directory traversal, and symlinks escaping the repository root are rejected. |
 | **Git Diff Sanitization** | Arguments passed to `--diff` are validated against strict git revision patterns (`assertGitRevision()`). Rejects flags starting with `-` (blocking option injection like `--output`), isolates range parameters behind `--`, and enforces a 15-second command timeout. |
@@ -421,7 +416,7 @@ For detailed security disclosures and reporting policies, see [SECURITY.md](./SE
 
 ## Contributing & License
 
-Contributions are welcome! Please ensure all tests and linter checks pass before opening a PR:
+Contributions are welcome! Please ensure all tests and linter checks pass before submitting a pull request:
 
 ```bash
 npm run check
