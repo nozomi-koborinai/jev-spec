@@ -1,0 +1,63 @@
+{
+  "name": "jev-spec",
+  "version": "0.1.0",
+  "description": "Specification-Driven Semantic Verification Engine for AI Code & Specs powered by TypeSafe AI Jev",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "jev-spec": "./bin/jev-spec.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nozomi-koborinai/jev-spec.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nozomi-koborinai/jev-spec/issues"
+  },
+  "homepage": "https://github.com/nozomi-koborinai/jev-spec#readme",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "pretest": "npm run build && tsc -p tsconfig.test.json",
+    "test": "node --test 'dist-test/test/**/*.test.js'",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "check": "npm run typecheck"
+  },
+  "keywords": [
+    "typesafe-ai",
+    "jev",
+    "sdd",
+    "specification-driven-development",
+    "semantic-verification",
+    "linter"
+  ],
+  "author": "Nozomi Koborinai",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/micromatch": "^4.0.10",
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "@types/mdast": "^4.0.4",
+    "@typesafe-ai/sdk": "^0.6.0",
+    "fast-glob": "^3.3.3",
+    "jiti": "^2.7.0",
+    "mdast-util-from-markdown": "^2.0.3",
+    "mdast-util-gfm": "^3.1.0",
+    "mdast-util-to-markdown": "^2.1.2",
+    "micromark": "^4.0.2",
+    "micromark-extension-gfm": "^3.0.0",
+    "micromatch": "^4.0.8",
+    "unist-util-visit": "^5.1.0"
+  }
+}
