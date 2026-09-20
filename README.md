@@ -6,23 +6,23 @@
 [![Bun Version](https://img.shields.io/badge/bun-%3E%3D1.2-black.svg)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-<p align="center"><img src="./assets/hero.png" alt="jev-spec - Specification-Driven Semantic Verification Engine for AI Code & Specs" width="100%" /></p>
+<p align="center"><img src="./assets/hero.png" alt="jev-spec - Specification-Driven Semantic Verification Engine" width="100%" /></p>
 
 **Specification-Driven Semantic Verification Engine for AI Code & Specs powered by TypeSafe AI Jev.**
 
 ---
 
-## Why jev-spec?
+## Why jev-spec? Bridging the Semantic Gap
 
 In Specification-Driven Development (SDD) and AI-assisted workflows (Cursor, Claude Code, GitHub Copilot), structural linters deterministically enforce markdown schemas, heading hierarchies, cross-references, and requirement IDs. However, static linters cannot bridge the **semantic gap**:
 
-- *Does `src/auth/session.ts` truly satisfy the acceptance criteria stipulated in `REQ-AUTH-02`?*
+- *Does `src/auth/session.ts` truly satisfy the functional criteria stipulated in `REQ-AUTH-02`?*
 - *Did the AI assistant silently introduce unrequested side effects, bypass headers, or undocumented endpoints?*
 - *Is this pull request an actual feature-complete implementation or an optimistic stub with placeholder comments?*
 
 ### The Generative LLM Trap (System 2)
 
-Evaluating semantic compliance historically required prompting autoregressive generative models (GPT-4, Claude 3.5 Sonnet):
+Evaluating semantic compliance historically required prompting autoregressive generative models (such as GPT-4 or Claude 3.5 Sonnet):
 
 - **High Latency**: Sequential token generation takes **5 to 15 seconds** per file review.
 - **Prohibitive Cost**: Autoregressive decoding burns **$0.05 to $0.20+** per file evaluation.
@@ -37,7 +37,7 @@ Powered by **TypeSafe AI Jev**, `jev-spec` is built from the ground up on a non-
 
 - **Sub-400ms Verification**: Single forward-pass evaluation in **70ms to 400ms**.
 - **Radical Cost Efficiency**: **$0.042 per million input tokens** (output tokens are free) — over 100x cheaper than generative review prompts.
-- **Calibrated Verification**: Evaluates typed decision primitives trained with Reinforcement Learning for Calibrated Decisions (RLCD). A predicted probability of 0.85 means the proposition is empirically true in 85% of cases.
+- **Mathematical Calibration**: Evaluates typed decision primitives trained with Reinforcement Learning for Calibrated Decisions (RLCD). A predicted probability of 0.85 means the proposition is empirically true in 85% of cases.
 - **Parallel Sampler**: Evaluates boolean propositions (`noul`), categorical distributions (`choice`), and ordinal rubrics (`score`) in a single forward pass over shared specification and implementation context.
 - **Deterministic Numerical Assertions**: Test semantic assertions (`minProbability`, `maxProbability`, `allowedChoices`, `minScore`) directly in your terminal, pre-commit hooks, or CI pipeline with standard exit codes.
 
@@ -49,9 +49,7 @@ Powered by **TypeSafe AI Jev**, `jev-spec` is built from the ground up on a non-
 | **Determinism** | Subjective reasoning & formatting drift | **Numerical thresholds (`minProbability: 0.85`)** |
 | **Git Hooks & Fast CI** | Impractical (breaks developer flow) | **Instant (<100ms startup with Bun)** |
 
----
-
-## Architecture Overview
+### Architecture Overview
 
 ```text
 Specification (Markdown / MDX) ──┐
@@ -63,26 +61,6 @@ Implementation (Code / Git Diff) ─┘   (Root Jail + Boundary Isolation)      
 2. **Security Isolation**: Enforces workspace root jails, symlink escape checks, git revision argument sanitization, and anti-prompt-injection boundary tagging.
 3. **Parallel Forward Pass**: Transmits shared context and rubrics to the Jev decision engine in a single batch request.
 4. **Assertion Evaluation**: Validates returned calibrated probabilities and scores against numerical thresholds, exiting with deterministic codes for CI/CD automation.
-
----
-
-## Runtime Support Matrix
-
-`jev-spec` provides first-class dual-runtime support across modern **Node.js** and **Bun**. Every pull request is validated against both runtimes across all supported versions in automated CI.
-
-| Runtime | Supported Versions | Status | Best For | Typical Cold Start |
-| :--- | :--- | :--- | :--- | :--- |
-| **Bun** | `>= 1.2` (Latest) | Tier 1 / Supported | Ultra-fast pre-commit hooks, staged checks, local dev loops | **< 100ms** |
-| **Node.js** | `>= 22.0.0` (LTS 22) | Tier 1 / Supported | Standard production CI/CD pipelines, containerized runners | ~350ms - 500ms |
-| **Node.js** | `>= 24.0.0` (Current 24) | Tier 1 / Supported | Modern cutting-edge Node runtime environments | ~350ms - 500ms |
-
-### Why Bun for Pre-Commit Hooks?
-
-Because Jev evaluates decisions in **sub-second time (70ms - 400ms)**, runtime startup overhead represents the majority of wall-clock time in local developer workflows:
-
-- **Instant Execution**: `bunx jev-spec check --staged` starts in **under 100ms** — more than 3x faster than traditional runner startups.
-- **Zero-Friction Git Hooks**: Developers can run full semantic assertions on staged changes in under half a second combined.
-- **Native TypeScript Execution**: Loads `jev-spec.config.ts` directly without transpilation overhead.
 
 ---
 
@@ -105,7 +83,7 @@ npm install -D jev-spec
 pnpm add -D jev-spec
 ```
 
-*Or run directly without installation via `bunx jev-spec` or `npx jev-spec`.*
+*Or run directly without local installation via `bunx jev-spec` or `npx jev-spec`.*
 
 ### 2. Configure Zones & Rubrics
 
@@ -169,15 +147,15 @@ npx jev-spec check
 
 ---
 
-## Configuration DSL Reference
+## Configuration DSL Guide
 
 `jev-spec` configurations use the `defineConfig(...)` helper for full TypeScript type inference and auto-completion.
 
 ### Core DSL Primitives
 
-#### `noul(question: string): NoulRubric`
+#### noul(question): NoulRubric
 
-A **noul** is a calibrated boolean proposition evaluated in $[0, 1]$. Jev estimates the empirical probability that the statement is true given the specification context and implementation code.
+A **noul** is a calibrated boolean proposition evaluated in the range `[0, 1]`. Jev estimates the empirical probability that the statement is true given the specification context and implementation code.
 
 ```typescript
 rubrics: {
@@ -191,10 +169,10 @@ assertions: {
 ```
 
 - **Assertion Options**:
-  - `minProbability?: number`: Minimum acceptable probability threshold ($[0, 1]$).
-  - `maxProbability?: number`: Maximum tolerated probability threshold ($[0, 1]$).
+  - `minProbability?: number`: Minimum acceptable probability threshold (`[0, 1]`).
+  - `maxProbability?: number`: Maximum tolerated probability threshold (`[0, 1]`).
 
-#### `choice<T extends string>(description: string, options: Record<T, string>): ChoiceRubric<T>`
+#### choice(description, options): ChoiceRubric
 
 A **choice** rubric represents a discrete categorical distribution across mutually exclusive options.
 
@@ -218,9 +196,9 @@ assertions: {
 - **Assertion Options**:
   - `allowedChoices?: readonly T[]`: Permitted choice keys.
   - `blockedChoices?: readonly T[]`: Forbidden choice keys (fails if selected).
-  - `minConfidence?: number`: Minimum required confidence score for the selected choice ($[0, 1]$).
+  - `minConfidence?: number`: Minimum required confidence score for the selected choice (`[0, 1]`).
 
-#### `score(description: string, levels: readonly string[]): ScoreRubric`
+#### score(description, levels): ScoreRubric
 
 A **score** rubric maps evaluation onto an ordinal scale between 2 and 10 levels. Returns a continuous score, level probabilities, and confidence.
 
@@ -244,7 +222,7 @@ assertions: {
 - **Assertion Options**:
   - `minScore?: number`: Minimum fractional score index.
   - `maxScore?: number`: Maximum fractional score index.
-  - `minConfidence?: number`: Minimum confidence metric ($[0, 1]$).
+  - `minConfidence?: number`: Minimum confidence metric (`[0, 1]`).
 
 ### Zone Configuration Interface
 
@@ -274,11 +252,9 @@ export interface ZoneConfig {
 }
 ```
 
----
+### CLI Usage Reference
 
-## CLI Usage
-
-### Check All Zones
+#### Check All Zones
 
 Run semantic verification across all zones declared in your configuration:
 
@@ -290,7 +266,7 @@ bunx jev-spec check
 npx jev-spec check
 ```
 
-### Targeted Zone Verification
+#### Targeted Zone Verification
 
 Execute verification against a single zone:
 
@@ -298,7 +274,7 @@ Execute verification against a single zone:
 bunx jev-spec check --zone auth
 ```
 
-### Git Diff Verification (Pre-commit Hooks & CI)
+#### Git Diff Verification (Pre-commit Hooks & CI)
 
 Verify semantic compliance against changed lines instead of entire source files:
 
@@ -310,7 +286,7 @@ bunx jev-spec check --staged
 bunx jev-spec check --diff origin/main...HEAD
 ```
 
-### Output Formats
+#### Output Formats
 
 ```bash
 # Formatted terminal report (default)
@@ -323,7 +299,7 @@ npx jev-spec check --format markdown --output jev-spec-report.md
 npx jev-spec check --format json --output result.json
 ```
 
-### CLI Exit Codes
+#### CLI Exit Codes
 
 - `0`: All zones and assertions passed.
 - `1`: Verification failed (one or more assertions breached).
@@ -331,7 +307,27 @@ npx jev-spec check --format json --output result.json
 
 ---
 
-## CI/CD Integration & Security Best Practices
+## Dual Runtime Support Matrix
+
+`jev-spec` provides first-class dual-runtime support across modern **Node.js** and **Bun**. Every pull request is validated against both runtimes across all supported versions in automated CI.
+
+| Runtime | Supported Versions | Status | Best For | Typical Cold Start |
+| :--- | :--- | :--- | :--- | :--- |
+| **Bun** | `>= 1.2` (Latest) | Tier 1 / Supported | Ultra-fast pre-commit hooks, staged checks, local dev loops | **< 100ms** |
+| **Node.js** | `>= 22.0.0` (LTS 22) | Tier 1 / Supported | Standard production CI/CD pipelines, containerized runners | ~350ms – 500ms |
+| **Node.js** | `>= 24.0.0` (Current 24) | Tier 1 / Supported | Modern cutting-edge Node runtime environments | ~350ms – 500ms |
+
+### Why Bun for Pre-Commit Hooks?
+
+Because Jev evaluates decisions in **sub-second time (70ms – 400ms)**, runtime startup overhead represents the majority of wall-clock time in local developer workflows:
+
+- **Instant Execution**: `bunx jev-spec check --staged` starts in **under 100ms** — more than 3x faster than traditional runner startups.
+- **Zero-Friction Git Hooks**: Developers can run full semantic assertions on staged changes in under half a second combined.
+- **Native TypeScript Execution**: Loads `jev-spec.config.ts` directly without transpilation overhead.
+
+---
+
+## Security & CI Best Practices
 
 `jev-spec` is engineered for safe execution in automated CI/CD environments and developer workstations.
 
@@ -396,16 +392,14 @@ jobs:
             --format terminal
 ```
 
----
-
-## Built-in Security Controls
+### Built-in Security Controls
 
 `jev-spec` implements comprehensive defensive security controls (Hardening S-01 through S-05) protecting developer machines and CI runners:
 
 | Security Control | Implementation Guarantee |
 | :--- | :--- |
 | **Path Traversal & Root Jail** | Workspace paths are strictly validated using realpath resolution (`assertInsideRoot()`). Absolute paths outside cwd, `..` directory traversal, and symlinks escaping the repository root are rejected. |
-| **Git Diff Sanitization** | Arguments passed to `--diff` are validated against strict git revision patterns (`assertGitRevision()`). Rejects flags starting with `-` (blocking option injection like `--output`), isolates range parameters behind `--`, and enforces a 15-second command timeout. |
+| **Git Revision Sanitization** | Arguments passed to `--diff` are validated against strict git revision patterns (`assertGitRevision()`). Rejects flags starting with `-` (blocking option injection like `--output`), isolates range parameters behind `--`, and enforces a 15-second command timeout. |
 | **Prompt Boundary Protection** | Untrusted specification and implementation contents are isolated within delimited tags (`<specification_context>` and `<untrusted_source_code>`) accompanied by strict anti-prompt-injection framing instructing Jev to disregard instructions embedded within source files. |
 | **Base URL SSRF Protection** | By default, requests are routed exclusively to official TypeSafe AI endpoints (`https://api.typesafe.ai`). Custom API base URLs are blocked unless `allowCustomBaseUrl: true` is explicitly configured. |
 | **Resource Bounds** | Prevents denial-of-service and runaway memory consumption by enforcing strict limits: max 500 files per scan, 2MB file size cap, and bounded character truncation per evaluation prompt. |
