@@ -4,7 +4,14 @@
   "description": "Specification-Driven Semantic Verification Engine for AI Code & Specs powered by TypeSafe AI Jev",
   "type": "module",
   "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "bin": {
     "jev-spec": "./bin/jev-spec.js"
   },
@@ -12,9 +19,11 @@
     "dist",
     "bin",
     "README.md",
-    "SECURITY.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/nozomi-koborinai/jev-spec.git"
@@ -25,10 +34,12 @@
   "homepage": "https://github.com/nozomi-koborinai/jev-spec#readme",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build",
     "pretest": "npm run build && tsc -p tsconfig.test.json",
     "test": "node --test 'dist-test/test/**/*.test.js'",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
-    "check": "npm run typecheck"
+    "lint": "npm run typecheck",
+    "check": "npm run typecheck && npm test"
   },
   "keywords": [
     "typesafe-ai",
