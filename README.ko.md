@@ -15,9 +15,9 @@
 ```text
 $ npx jev-spec check
 
-=== jev-spec Verification Report ===
+=== jev-spec Check Report ===
 
-Zone: auth [✖ FAILED]
+Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
     ✔ verifiesSessionTokens: probability: 0.97
@@ -25,7 +25,7 @@ Zone: auth [✖ FAILED]
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
     ✔ introducesUnspecifiedBehavior: probability: 0.03
 
-Overall: ✖ VERIFICATION FAILED
+Overall: ✖ CHECKS FAILED
 
 $ echo $?
 1
@@ -52,7 +52,7 @@ $ echo $?
 1. **프롬프트가 아니라 질문을 씁니다.** 요구 사항마다 예/아니오 질문(`noul`) 하나를 둡니다. 판단에 필요할 때는 범주형(`choice`)과 단계형(`score`) 루브릭도 쓸 수 있습니다. 모두 타입이 있는 `jev-spec.config.ts`에 작성합니다.
 2. **Jev는 숫자로 답합니다.** Jev는 [System One 모델](https://docs.typesafe.ai/concepts/system-one)이며 텍스트를 생성하지 않습니다. 명세와 코드를 한 번 읽고, 같은 요청 안에서 모든 질문에 확률을 돌려줍니다. TypeSafe는 Jev가 [보정된 확률](https://docs.typesafe.ai/introduction/machine-learning-primer)을 내도록 학습시키며, 임계값이 의미를 갖는 것은 그 덕분입니다.
 3. **판정은 임계값이 합니다.** `minProbability: 0.85`, `maxProbability: 0.15`, `allowedChoices`, `minScore`. 모두 단순한 비교이며 표준 종료 코드를 사용합니다(`0` 통과, `1` 실패, `2` 설정 오류).
-4. **커밋마다 돌릴 수 있을 만큼 저렴합니다.** Jev는 입력 토큰에만 과금하며 [100만 토큰당 $0.042](https://docs.typesafe.ai/models), 출력은 무료입니다. 따라서 Zone 하나를 검사하는 비용은 1센트에도 못 미치고, 모든 보고서에 예상 비용이 표시됩니다. 범용 LLM과의 [속도 및 비용 비교](https://typesafe.ai)는 TypeSafe가 직접 공개하고 있습니다.
+4. **커밋마다 돌릴 수 있을 만큼 저렴합니다.** Jev는 입력 토큰에만 과금하며 [100만 토큰당 $0.042](https://docs.typesafe.ai/models), 출력은 무료입니다. 따라서 대상 하나를 검사하는 비용은 1센트에도 못 미치고, 모든 보고서에 예상 비용이 표시됩니다. 범용 LLM과의 [속도 및 비용 비교](https://typesafe.ai)는 TypeSafe가 직접 공개하고 있습니다.
 
 | | 범용 LLM에 프롬프트 보내기 | jev-spec과 Jev |
 | :--- | :--- | :--- |
@@ -64,7 +64,7 @@ $ echo $?
 ### 알아 두어야 할 한계
 
 - **확률은 증명이 아닙니다.** jev-spec이 알려 주는 것은 코드가 요구 사항에서 벗어났을 가능성이 높다는 사실입니다. 테스트와 리뷰를 보완할 뿐, 어느 쪽도 대체하지 않습니다. 임계값은 신뢰하기 전에 여러분의 코드로 보정하세요.
-- **Zone은 작게 유지하세요.** Zone 하나는 한 번의 요청으로 전송됩니다. `src/` 전체가 아니라 하나의 도메인으로 잡으세요. 무관한 내용이 늘어날수록 Jev의 정확도가 떨어집니다([알려진 한계](https://docs.typesafe.ai/model-jaggedness/jev-1.13) 참고).
+- **대상은 작게 유지하세요.** 대상 하나는 한 번의 요청으로 전송됩니다. `src/` 전체가 아니라 하나의 도메인으로 잡으세요. 무관한 내용이 늘어날수록 Jev의 정확도가 떨어집니다([알려진 한계](https://docs.typesafe.ai/model-jaggedness/jev-1.13) 참고).
 - **질문은 좁게.** 질문 하나에 요구 사항 하나. 여러 조건을 묶은 질문, 개수를 세는 질문, 부정이 겹친 질문은 답의 신뢰도가 떨어집니다.
 - **명세 안의 Markdown 표는 아직 모델로 전송되지 않습니다.** 표의 행 내용을 질문 안에서 다시 서술하거나, 요구 사항을 목록으로 작성하세요.
 - **`--staged`와 `--diff`는 변경된 헝크만 전송합니다.** 전체 파일보다 문맥이 적어 빠른 피드백에 적합하며, 모든 것을 보는 것은 전체 검사입니다.
@@ -80,7 +80,7 @@ $ echo $?
 
 1. **컨텍스트 추출**: `mdast`를 사용하여 Markdown 명세를 파싱(제목, 태그, 요구사항 ID 필터링)하고, 대상 소스 파일이나 스테이징된 Git diff 헝크를 추출합니다.
 2. **보안 격리**: 작업 공간 Root Jail(경로 탐색 공격 방지), 심볼릭 링크 이탈 감지, Git 리비전 인자 검증 및 프롬프트 인젝션 방어 태그 격리를 적용합니다.
-3. **Zone당 한 번의 요청**: Zone의 명세, 코드, 모든 루브릭을 한 번의 요청으로 Jev에 전송합니다.
+3. **대상당 한 번의 요청**: 대상의 명세, 코드, 모든 루브릭을 한 번의 요청으로 Jev에 전송합니다.
 4. **단언 평가**: 반환된 확률과 점수를 임계값과 비교하고 종료 코드 `0`, `1`, `2` 중 하나로 종료합니다.
 
 ---
@@ -115,7 +115,9 @@ pnpm add -D jev-spec
 
 *로컬 설치 없이 `bunx jev-spec` 또는 `npx jev-spec`을 통해 즉시 실행할 수도 있습니다.*
 
-### 2. 영역(Zone) 및 루브릭 구성
+### 2. 대상 및 루브릭 구성
+
+**대상(Target)**은 명세의 한 부분과 그것을 구현하는 코드의 묶음입니다. 대상마다 루브릭과 단언을 가지며, 하나의 단위로 검사됩니다.
 
 리포지토리 루트에 `jev-spec.config.ts`를 생성합니다.
 
@@ -123,7 +125,7 @@ pnpm add -D jev-spec
 import { defineConfig, noul, choice, score } from 'jev-spec';
 
 export default defineConfig({
-  zones: {
+  targets: {
     auth: {
       description: 'Authentication session token verification',
       specPath: 'docs/specs/auth-requirements.md',
@@ -165,9 +167,9 @@ export default defineConfig({
 
 질문은 요구 사항마다 하나씩, 요구 사항 ID를 명시해서 작성하세요. 여러 요구 사항을 하나의 질문으로 묶으면 어느 것이 실패했는지 알 수 없고, 모델의 답변 신뢰도도 떨어집니다.
 
-### 3. 시맨틱 검증 실행
+### 3. 검사 실행
 
-[TypeSafe 콘솔](https://console.typesafe.ai/keys)에서 API 키를 만들고 환경 변수로 설정한 뒤 검증을 실행합니다.
+[TypeSafe 콘솔](https://console.typesafe.ai/keys)에서 API 키를 만들고 환경 변수로 설정한 뒤 검사를 실행합니다.
 
 ```bash
 export TYPESAFE_AI_API_KEY="your-typesafe-api-key"
@@ -233,7 +235,7 @@ assertions: {
 
 - **단언 옵션**:
   - `allowedChoices?: readonly T[]`: 허용되는 선택지 키 배열.
-  - `blockedChoices?: readonly T[]`: 금지되는 선택지 키 배열 (선택 시 검증 실패).
+  - `blockedChoices?: readonly T[]`: 금지되는 선택지 키 배열 (선택 시 검사 실패).
   - `minConfidence?: number`: 선택된 선택지에 요구되는 최소 신뢰도 점수 (`[0, 1]`).
 
 #### score(description, levels): ScoreRubric
@@ -262,11 +264,11 @@ assertions: {
   - `maxScore?: number`: 최대 허용 소수 점수 인덱스.
   - `minConfidence?: number`: 최소 신뢰도 지표 (`[0, 1]`).
 
-### 영역(Zone) 구성 인터페이스
+### 대상 구성 인터페이스
 
 ```typescript
-export interface ZoneConfig {
-  /** 영역에 대한 설명 (선택 사항) */
+export interface TargetConfig {
+  /** 대상에 대한 설명 (선택 사항) */
   readonly description?: string;
 
   /** 작업 공간 내 Markdown / MDX 명세 문서의 상대 경로 */
@@ -294,9 +296,9 @@ export interface ZoneConfig {
 
 ### CLI 명령어 레퍼런스
 
-#### 모든 영역 검사
+#### 모든 대상 검사
 
-설정에 선언된 모든 영역에 대해 시맨틱 검증을 실행합니다.
+설정에 선언된 모든 대상을 검사합니다.
 
 ```bash
 # Bun을 통한 즉시 검사
@@ -306,27 +308,27 @@ bunx jev-spec check
 npx jev-spec check
 ```
 
-#### 특정 영역 지정 검사
+#### 대상 하나만 검사
 
-특정 영역만을 대상으로 검증을 실행합니다.
+이름을 지정해 대상 하나만 검사합니다.
 
 ```bash
-bunx jev-spec check --zone auth
+bunx jev-spec check --target auth
 ```
 
-#### Git Diff 기반 검사 (Pre-commit 훅 및 CI)
+#### 변경분만 검사 (Pre-commit 훅 및 CI)
 
-전체 소스 파일 대신 변경된 라인만을 대상으로 시맨틱 검증을 실행합니다.
+전체 소스 파일 대신 변경된 라인만 검사합니다.
 
 ```bash
-# 스테이징된 Git 변경 사항 검증 (pre-commit 훅에 최적)
+# 스테이징된 Git 변경 사항 검사 (pre-commit 훅에 최적)
 bunx jev-spec check --staged
 
-# 브랜치 범위 Diff 검증 (PR CI 파이프라인에 최적)
+# 브랜치 범위 Diff 검사 (PR CI 파이프라인에 최적)
 bunx jev-spec check --diff origin/main...HEAD
 ```
 
-변경된 파일이 Zone의 `codePaths`와 하나도 일치하지 않으면 해당 Zone은 `SKIPPED`로 보고됩니다. Jev로 전송되지 않고 종료 코드에도 영향을 주지 않으므로, Zone을 건드리지 않은 커밋을 pre-commit 훅이 막지 않습니다.
+변경된 파일이 대상의 `codePaths`와 하나도 일치하지 않으면 해당 대상은 `SKIPPED`로 보고됩니다. Jev로 전송되지 않고 종료 코드에도 영향을 주지 않으므로, 대상을 건드리지 않은 커밋을 pre-commit 훅이 막지 않습니다.
 
 #### Dry Run, Mock 모드, 도움말 및 버전
 
@@ -342,7 +344,7 @@ npx jev-spec --help
 npx jev-spec --version
 ```
 
-Dry Run은 Zone마다 찾아낸 명세 섹션과 요구 사항 ID, 매칭된 코드 파일, 질문할 루브릭, 예상 비용을 출력합니다. 어떤 루브릭도 언급하지 않는 요구 사항 ID, 어떤 파일과도 일치하지 않는 `codePaths`, 크기 한도를 초과하는 코드 컨텍스트에 대해서는 경고합니다. 설정이 올바르면 종료 코드 `0`, 문제가 있으면 `2`로 종료합니다. 아무것도 검증하지 않으므로 `1`로 종료하는 일은 없습니다.
+Dry Run은 대상마다 찾아낸 명세 섹션과 요구 사항 ID, 매칭된 코드 파일, 질문할 루브릭, 예상 비용을 출력합니다. 어떤 루브릭도 언급하지 않는 요구 사항 ID, 어떤 파일과도 일치하지 않는 `codePaths`, 크기 한도를 초과하는 코드 컨텍스트에 대해서는 경고합니다. 설정이 올바르면 종료 코드 `0`, 문제가 있으면 `2`로 종료합니다. 아무것도 검사하지 않으므로 `1`로 종료하는 일은 없습니다.
 
 알 수 없는 명령, 알 수 없는 옵션, 값이 누락된 옵션, 지원하지 않는 `--format` 값은 종료 코드 `2`와 함께 거부됩니다.
 
@@ -367,8 +369,8 @@ npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
 #### CLI 종료 코드
 
-- `0`: 모든 영역과 단언이 통과됨.
-- `1`: 검증 실패 (하나 이상의 단언 위반).
+- `0`: 모든 대상과 단언이 통과됨.
+- `1`: 검사 실패 (하나 이상의 단언 위반).
 - `2`: 설정 또는 런타임 오류 (파일 없음, 잘못된 인자, API 키 누락 등).
 
 ---
@@ -405,8 +407,8 @@ Jev가 결정을 내리는 시간은 **1초 미만(70ms ~ 400ms)**에 불과하�
 1. **신뢰할 수 없는 코드 위험**: 공개 저장소에서 외부 PR은 `jev-spec.config.ts`, 명세 또는 코드를 임의로 변경할 수 있습니다. 민감한 API 자격 증명이 노출된 상태에서 외부 코드를 실행하면 시크릿 탈취 경로가 생길 수 있습니다.
 2. **권장되는 심층 방어 전략**:
    - **Fork PR에 Dry Run 적용**: 외부 PR 검사에는 Dry Run(`jev-spec check --dry-run`)을 사용하여 API 키 노출 없이 설정 구조, 명세 파싱 및 glob 매칭을 안전하게 검증합니다.
-   - **Environment 승인 보호**: 외부 PR에 대해 실제 검증을 수행해야 하는 경우 GitHub Actions의 Environment Approvals를 적용하여 메인테이너가 변경 사항을 확인한 후 시크릿이 제공되도록 설정합니다.
-   - **Main 브랜치 검증**: `main` 브랜치로의 `push` 및 신뢰할 수 있는 내부 릴리스 브랜치에서 실제 라이브 시맨틱 검증을 수행합니다.
+   - **Environment 승인 보호**: 외부 PR에 대해 실제 API로 검사해야 하는 경우 GitHub Actions의 Environment Approvals를 적용하여 메인테이너가 변경 사항을 확인한 후 시크릿이 제공되도록 설정합니다.
+   - **Main 브랜치 검사**: `main` 브랜치로의 `push` 및 신뢰할 수 있는 내부 릴리스 브랜치에서 실제 API로 검사를 수행합니다.
 
 ### 권장 GitHub Actions 워크플로
 
@@ -423,7 +425,7 @@ permissions:
   contents: read
 
 jobs:
-  verify-specs:
+  check-specs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -440,7 +442,7 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Run jev-spec (Internal Pull Request / Changed Zones)
+      - name: Run jev-spec (Internal Pull Request / Changed Targets)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
@@ -449,7 +451,7 @@ jobs:
             --diff origin/main...HEAD \
             --format markdown >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run jev-spec (Push to Main / Full Verification)
+      - name: Run jev-spec (Push to Main / Full Run)
         if: github.event_name == 'push'
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
@@ -460,7 +462,7 @@ jobs:
         run: npx jev-spec check --dry-run
 ```
 
-push 단계는 의도적으로 전체 검증을 실행합니다. `main`에서는 `origin/main...HEAD`가 빈 범위가 되어 모든 Zone이 건너뛰어지기 때문입니다.
+push 단계는 의도적으로 전체를 검사합니다. `main`에서는 `origin/main...HEAD`가 빈 범위가 되어 모든 대상이 건너뛰어지기 때문입니다.
 
 ### 기본 탑재 보안 방어 기능
 

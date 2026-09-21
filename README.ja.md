@@ -15,9 +15,9 @@
 ```text
 $ npx jev-spec check
 
-=== jev-spec Verification Report ===
+=== jev-spec Check Report ===
 
-Zone: auth [✖ FAILED]
+Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
     ✔ verifiesSessionTokens: probability: 0.97
@@ -25,7 +25,7 @@ Zone: auth [✖ FAILED]
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
     ✔ introducesUnspecifiedBehavior: probability: 0.03
 
-Overall: ✖ VERIFICATION FAILED
+Overall: ✖ CHECKS FAILED
 
 $ echo $?
 1
@@ -52,7 +52,7 @@ $ echo $?
 1. **プロンプトではなく、質問を書きます。** 要件ごとに、はい／いいえで答える質問（`noul`）を 1 つ用意します。判断に必要なときは、カテゴリ（`choice`）と段階評価（`score`）のルーブリックも使えます。これらは型付きの `jev-spec.config.ts` に書きます。
 2. **Jev は数値で答えます。** Jev は [System One モデル](https://docs.typesafe.ai/concepts/system-one)で、テキストを生成しません。仕様とコードを一度読み込み、同じリクエストの中ですべての質問に確率を返します。TypeSafe は Jev を[校正された確率](https://docs.typesafe.ai/introduction/machine-learning-primer)を返すように訓練しており、しきい値が意味を持つのはそのためです。
 3. **合否はしきい値が決めます。** `minProbability: 0.85`、`maxProbability: 0.15`、`allowedChoices`、`minScore`。どれも単純な比較で、終了コードも標準的です（`0` 成功、`1` 失敗、`2` セットアップの不備）。
-4. **コミットのたびに回せる安さです。** Jev の料金は入力トークンだけにかかり、[100 万トークンあたり $0.042](https://docs.typesafe.ai/models)、出力は無料です。1 ゾーンの検査は 1 セントに満たず、見積もり額は毎回のレポートに表示されます。汎用 LLM との[速度とコストの比較](https://typesafe.ai)は、TypeSafe が自ら公開しています。
+4. **コミットのたびに回せる安さです。** Jev の料金は入力トークンだけにかかり、[100 万トークンあたり $0.042](https://docs.typesafe.ai/models)、出力は無料です。1 ターゲットのチェックは 1 セントに満たず、見積もり額は毎回のレポートに表示されます。汎用 LLM との[速度とコストの比較](https://typesafe.ai)は、TypeSafe が自ら公開しています。
 
 | | 汎用 LLM へのプロンプト | jev-spec と Jev |
 | :--- | :--- | :--- |
@@ -64,7 +64,7 @@ $ echo $?
 ### 知っておくべき限界
 
 - **確率は証明ではありません。** jev-spec が教えるのは、コードが要件からおそらくずれた、ということです。テストやレビューを補うものであり、どちらの代わりにもなりません。しきい値は、信頼する前に自分のコードで調整してください。
-- **ゾーンは小さく保ってください。** 1 つのゾーンは 1 回のリクエストで送られます。`src/` 全体ではなく、1 つの領域にしてください。無関係な内容が増えるほど Jev の精度は下がります（[既知の限界](https://docs.typesafe.ai/model-jaggedness/jev-1.13)を参照）。
+- **ターゲットは小さく保ってください。** 1 つのターゲットは 1 回のリクエストで送られます。`src/` 全体ではなく、1 つの領域にしてください。無関係な内容が増えるほど Jev の精度は下がります（[既知の限界](https://docs.typesafe.ai/model-jaggedness/jev-1.13)を参照）。
 - **質問は狭く。** 1 つの質問に要件は 1 つ。複数の条件をまとめた質問、数を数える質問、否定が重なる質問は、回答の信頼性が下がります。
 - **仕様書内の Markdown テーブルは、まだモデルに送られません。** 行の内容を質問の中で言い直すか、要件をリストで書いてください。
 - **`--staged` と `--diff` が送るのは、変更されたハンクだけです。** ファイル全体より文脈が少ないため、素早いフィードバック向きです。すべてを見るのはフルチェックです。
@@ -80,7 +80,7 @@ $ echo $?
 
 1. **コンテキスト抽出**: `mdast` を用いて Markdown 仕様書をパースし（見出し、タグ、要件 ID でフィルタリング）、対象ソースファイルまたはステージングされた Git 差分ハンクを抽出。
 2. **セキュリティ隔離**: ワークスペースの root jail（ルートディレクトリ外アクセスの防止）、シンボリックリンク脱出の検出、Git リビジョン引数のサニタイズ、プロンプトインジェクション防御のための境界タギングを適用。
-3. **ゾーンごとに 1 リクエスト**: ゾーンの仕様、コード、すべてのルーブリックを、1 回のリクエストで Jev に送信。
+3. **ターゲットごとに 1 リクエスト**: ターゲットの仕様、コード、すべてのルーブリックを、1 回のリクエストで Jev に送信。
 4. **アサーション評価**: 返ってきた確率とスコアをしきい値と比較し、終了コード `0`・`1`・`2` のいずれかで終了。
 
 ---
@@ -115,7 +115,9 @@ pnpm add -D jev-spec
 
 *ローカルインストールを行わずに、`bunx jev-spec` または `npx jev-spec` で直接実行することも可能です。*
 
-### 2. ゾーンとルーブリックの設定
+### 2. ターゲットとルーブリックの設定
+
+**ターゲット**（チェック対象）は、仕様書の一部分と、それを実装するコードの組です。ターゲットごとにルーブリックとアサーションを持ち、1 つの単位としてチェックされます。
 
 リポジトリルートに `jev-spec.config.ts` を作成します。
 
@@ -123,7 +125,7 @@ pnpm add -D jev-spec
 import { defineConfig, noul, choice, score } from 'jev-spec';
 
 export default defineConfig({
-  zones: {
+  targets: {
     auth: {
       description: 'Authentication session token verification',
       specPath: 'docs/specs/auth-requirements.md',
@@ -165,9 +167,9 @@ export default defineConfig({
 
 質問は要件ごとに 1 つずつ、要件 ID を明記して書いてください。複数の要件を 1 つの質問にまとめると、どの要件で失敗したのか分からなくなり、モデルの回答の信頼性も下がります。
 
-### 3. セマンティック検証の実行
+### 3. チェックの実行
 
-[TypeSafe のコンソール](https://console.typesafe.ai/keys)で API キーを作成し、設定してから検証コマンドを実行します。
+[TypeSafe のコンソール](https://console.typesafe.ai/keys)で API キーを作成し、設定してからチェックを実行します。
 
 ```bash
 export TYPESAFE_AI_API_KEY="your-typesafe-api-key"
@@ -262,11 +264,11 @@ assertions: {
   - `maxScore?: number`: 最大小数スコアインデックス。
   - `minConfidence?: number`: 最小信頼度指標（`[0, 1]`）。
 
-### ゾーン設定インターフェース
+### ターゲット設定インターフェース
 
 ```typescript
-export interface ZoneConfig {
-  /** ゾーンの概要説明（任意） */
+export interface TargetConfig {
+  /** ターゲットの概要説明（任意） */
   readonly description?: string;
 
   /** ワークスペース内の Markdown / MDX 仕様書への相対パス */
@@ -294,9 +296,9 @@ export interface ZoneConfig {
 
 ### CLI 利用リファレンス
 
-#### すべてのゾーンを検証
+#### すべてのターゲットをチェック
 
-設定内で宣言されたすべてのゾーンに対してセマンティック検証を実行します。
+設定内で宣言されたすべてのターゲットをチェックします。
 
 ```bash
 # Bun による即座のチェック
@@ -306,27 +308,27 @@ bunx jev-spec check
 npx jev-spec check
 ```
 
-#### 特定ゾーンの指定検証
+#### 1 つのターゲットだけをチェック
 
-特定のゾーンのみを対象に検証を実行します。
+名前を指定して、1 つのターゲットだけをチェックします。
 
 ```bash
-bunx jev-spec check --zone auth
+bunx jev-spec check --target auth
 ```
 
-#### Git 差分による検証（Pre-commit フックおよび CI）
+#### 差分だけのチェック（Pre-commit フックおよび CI）
 
-ソースファイル全体ではなく、変更された行のみを対象にセマンティック検証を実行します。
+ソースファイル全体ではなく、変更された行のみをチェックします。
 
 ```bash
-# ステージングされた Git 変更に対して検証（pre-commit フックに最適）
+# ステージングされた Git 変更をチェック（pre-commit フックに最適）
 bunx jev-spec check --staged
 
-# ブランチ範囲の Git 差分に対して検証（PR の CI に最適）
+# ブランチ範囲の Git 差分をチェック（PR の CI に最適）
 bunx jev-spec check --diff origin/main...HEAD
 ```
 
-変更されたファイルが `codePaths` に 1 つも一致しないゾーンは `SKIPPED` として報告されます。Jev には送信されず、終了コードにも影響しないため、ゾーンに触れていないコミットを pre-commit フックが止めることはありません。
+変更されたファイルが `codePaths` に 1 つも一致しないターゲットは `SKIPPED` として報告されます。Jev には送信されず、終了コードにも影響しないため、ターゲットに触れていないコミットを pre-commit フックが止めることはありません。
 
 #### ドライラン・Mock モード・ヘルプ・バージョン
 
@@ -342,7 +344,7 @@ npx jev-spec --help
 npx jev-spec --version
 ```
 
-ドライランは、ゾーンごとに、見つかった仕様のセクションと要件 ID、マッチしたコードファイル、問い合わせる予定のルーブリック、見積もりコストを表示します。どのルーブリックにも言及されていない要件 ID、どのファイルにも一致しない `codePaths`、サイズ上限を超えるコードコンテキストについては警告します。セットアップが正しければ終了コード `0`、不備があれば `2` で終了します。何も検証しないため、`1` で終了することはありません。
+ドライランは、ターゲットごとに、見つかった仕様のセクションと要件 ID、マッチしたコードファイル、問い合わせる予定のルーブリック、見積もりコストを表示します。どのルーブリックにも言及されていない要件 ID、どのファイルにも一致しない `codePaths`、サイズ上限を超えるコードコンテキストについては警告します。セットアップが正しければ終了コード `0`、不備があれば `2` で終了します。何もチェックしないため、`1` で終了することはありません。
 
 不明なコマンド、不明なオプション、値の欠けたオプション、未対応の `--format` 値は、終了コード `2` で拒否されます。
 
@@ -367,8 +369,8 @@ npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
 #### CLI 終了コード
 
-- `0`: すべてのゾーンおよびアサーションに合格。
-- `1`: 検証失敗（1 つ以上のアサーションに違反）。
+- `0`: すべてのターゲットおよびアサーションに合格。
+- `1`: チェック失敗（1 つ以上のアサーションに違反）。
 - `2`: 設定または実行時エラー（ファイル不在、不正な引数、API キー欠落など）。
 
 ---
@@ -405,8 +407,8 @@ Jev は判定を **1 秒未満（70ms〜400ms）** で評価するため、ロ�
 1. **信頼できないコードのリスク**: パブリックリポジトリでは、PR によって `jev-spec.config.ts`、仕様書、コードが改ざんされる可能性があります。機密性の高い認証情報へのアクセス権を持った状態で信頼できないコードを実行すると、シークレット漏洩の攻撃対象領域となります。
 2. **推奨される多層防御パターン**:
    - **Fork PR にはドライランを使用**: PR チェックではドライラン（`jev-spec check --dry-run`）を使用し、API 認証情報を一切公開せずに設定構造、仕様パース、glob パターンの一致を検証します。
-   - **Environment Protection（環境保護ルール）**: 外部 PR でライブ検証を行う場合は、GitHub Actions の Environment Approvals を使用し、メンテナーが差分を確認・承認した後にのみシークレットが利用できるようにします。
-   - **main ブランチでの検証**: `main` への push や信頼できる内部リリースのブランチに対してライブのセマンティック検証を実行します。
+   - **Environment Protection（環境保護ルール）**: 外部 PR で実 API のチェックを行う場合は、GitHub Actions の Environment Approvals を使用し、メンテナーが差分を確認・承認した後にのみシークレットが利用できるようにします。
+   - **main ブランチでのチェック**: `main` への push や信頼できる内部リリースのブランチに対して、実 API のチェックを実行します。
 
 ### 推奨 GitHub Actions ワークフロー
 
@@ -423,7 +425,7 @@ permissions:
   contents: read
 
 jobs:
-  verify-specs:
+  check-specs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -440,7 +442,7 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Run jev-spec (Internal Pull Request / Changed Zones)
+      - name: Run jev-spec (Internal Pull Request / Changed Targets)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
@@ -449,7 +451,7 @@ jobs:
             --diff origin/main...HEAD \
             --format markdown >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run jev-spec (Push to Main / Full Verification)
+      - name: Run jev-spec (Push to Main / Full Run)
         if: github.event_name == 'push'
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
@@ -460,7 +462,7 @@ jobs:
         run: npx jev-spec check --dry-run
 ```
 
-push 時のステップは意図的にフル検証を実行します。`main` 上では `origin/main...HEAD` が空の範囲になり、すべてのゾーンがスキップされてしまうためです。
+push 時のステップは、意図的にすべてをチェックします。`main` 上では `origin/main...HEAD` が空の範囲になり、すべてのターゲットがスキップされてしまうためです。
 
 ### 組み込みセキュリティ防御機能
 

@@ -1,12 +1,12 @@
 import * as fs from 'node:fs/promises';
 import { loadConfig } from '../../config.js';
 import { assertInsideRoot } from '../../context/path-security.js';
-import { runVerification } from '../../runner/engine.js';
+import { runChecks } from '../../runner/engine.js';
 import { formatMarkdownReport, formatTerminalReport } from '../../runner/reporter.js';
 
 export interface CheckCliOptions {
   readonly config?: string;
-  readonly zone?: string;
+  readonly target?: string;
   readonly format?: 'terminal' | 'markdown' | 'json';
   readonly output?: string;
   readonly staged?: boolean;
@@ -52,9 +52,9 @@ export async function checkCommand(options: CheckCliOptions = {}): Promise<numbe
       ? { ...loadedConfig, client: { ...loadedConfig.client, mock: true } }
       : loadedConfig;
 
-    const result = await runVerification(config, {
+    const result = await runChecks(config, {
       cwd,
-      zone: options.zone,
+      target: options.target,
       gitDiff: resolveGitDiffOptions(options),
       dryRun: options.dryRun,
     });

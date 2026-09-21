@@ -40,7 +40,7 @@ export function validateGlobPattern(pattern: string): void {
 }
 
 /**
- * Resolves a path to its canonical form and verifies it resides inside the project root.
+ * Resolves a path to its canonical form and confirms it resides inside the project root.
  * Symlinks are not followed beyond the resolved real path.
  */
 export async function assertInsideRoot(root: string, targetPath: string): Promise<string> {

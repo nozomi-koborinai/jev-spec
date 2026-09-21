@@ -69,7 +69,7 @@ export async function extractCodeContext(
   const resolvedPaths = await resolveGlobPatterns(filePatterns, cwd);
   if (resolvedPaths.length > MAX_FILE_COUNT) {
     throw new PathSecurityError(
-      `File count ${resolvedPaths.length} exceeds maximum of ${MAX_FILE_COUNT} per zone`
+      `File count ${resolvedPaths.length} exceeds maximum of ${MAX_FILE_COUNT} per target`
     );
   }
 
@@ -102,7 +102,7 @@ async function extractFromGitDiff(
 
   if (matched.length > MAX_FILE_COUNT) {
     throw new PathSecurityError(
-      `Diff file count ${matched.length} exceeds maximum of ${MAX_FILE_COUNT} per zone`
+      `Diff file count ${matched.length} exceeds maximum of ${MAX_FILE_COUNT} per target`
     );
   }
 
@@ -171,7 +171,7 @@ export async function extractCodeFromPaths(
 ): Promise<ExtractedCodeContext> {
   if (filePaths.length > MAX_FILE_COUNT) {
     throw new PathSecurityError(
-      `File count ${filePaths.length} exceeds maximum of ${MAX_FILE_COUNT} per zone`
+      `File count ${filePaths.length} exceeds maximum of ${MAX_FILE_COUNT} per target`
     );
   }
 

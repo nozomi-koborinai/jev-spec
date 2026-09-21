@@ -5,7 +5,7 @@ import type {
   JevSpecConfig,
   NoulRubric,
   ScoreRubric,
-  ZoneConfig,
+  TargetConfig,
 } from './types.js';
 
 /**
@@ -50,18 +50,18 @@ export function score(description: string, levels: readonly string[]): ScoreRubr
 }
 
 /**
- * Configuration shape accepted by defineConfig. `Z` maps each zone name to the rubrics
- * declared in that zone, so assertions are checked against the rubrics of their own zone.
+ * Configuration shape accepted by defineConfig. `Z` maps each target name to the rubrics
+ * declared in that target, so assertions are checked against the rubrics of their own target.
  */
 export interface JevSpecConfigInput<Z extends Record<string, Record<string, AnyRubric>>> {
   readonly client?: JevClientConfig;
-  readonly zones: { readonly [K in keyof Z]: ZoneConfig<Z[K]> };
+  readonly targets: { readonly [K in keyof Z]: TargetConfig<Z[K]> };
 }
 
 /**
  * Type-safe configuration helper for jev-spec.config.ts.
  *
- * Assertion keys must name a rubric of the same zone, assertion options must fit the rubric
+ * Assertion keys must name a rubric of the same target, assertion options must fit the rubric
  * type, and allowedChoices / blockedChoices must be option keys of the choice rubric.
  */
 export function defineConfig<Z extends Record<string, Record<string, AnyRubric>>>(

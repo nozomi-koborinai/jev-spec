@@ -5,7 +5,7 @@ import {
   type JevEvaluator,
   JevSpecConfigurationError,
 } from '../src/evaluator/jev-evaluator.js';
-import { runVerification } from '../src/runner/engine.js';
+import { runChecks } from '../src/runner/engine.js';
 import { formatMarkdownReport, formatTerminalReport } from '../src/runner/reporter.js';
 import type { AnyRubricResult, JevSpecConfig } from '../src/types.js';
 import { createTempGitRepo, type TempGitRepo } from './git-test-utils.js';
@@ -21,7 +21,7 @@ class RecordingEvaluator implements JevEvaluator {
 }
 
 const config: JevSpecConfig = {
-  zones: {
+  targets: {
     core: {
       specPath: 'docs/spec.md',
       codePaths: ['src/**/*.ts'],
@@ -31,7 +31,7 @@ const config: JevSpecConfig = {
   },
 };
 
-describe('diff mode zone selection', () => {
+describe('diff mode target selection', () => {
   let repo: TempGitRepo;
   let evaluator: RecordingEvaluator;
 
@@ -52,27 +52,27 @@ describe('diff mode zone selection', () => {
     await repo.cleanup();
   });
 
-  it('skips a zone without calling the evaluator when no staged file matches its codePaths', async () => {
+  it('skips a target without calling the evaluator when no staged file matches its codePaths', async () => {
     await repo.write('NOTES.md', 'unrelated change\n');
     repo.git('add', 'NOTES.md');
 
-    const result = await runVerification(config, {
+    const result = await runChecks(config, {
       cwd: repo.dir,
       evaluator,
       gitDiff: { staged: true },
     });
 
     expect(evaluator.calls).toHaveLength(0);
-    expect(result.zones[0].skipped).toBe(true);
-    expect(result.zones[0].evaluations).toHaveLength(0);
+    expect(result.targets[0].skipped).toBe(true);
+    expect(result.targets[0].evaluations).toHaveLength(0);
     expect(result.passed).toBe(true);
   });
 
-  it('evaluates a zone against the staged hunks when a matching file changed', async () => {
+  it('evaluates a target against the staged hunks when a matching file changed', async () => {
     await repo.write('src/a.ts', 'export const a = 1;\nexport const b = 2;\n');
     repo.git('add', 'src/a.ts');
 
-    const result = await runVerification(config, {
+    const result = await runChecks(config, {
       cwd: repo.dir,
       evaluator,
       gitDiff: { staged: true },
@@ -80,15 +80,15 @@ describe('diff mode zone selection', () => {
 
     expect(evaluator.calls).toHaveLength(1);
     expect(evaluator.calls[0].codeContext).toContain('+export const b = 2;');
-    expect(result.zones[0].skipped).toBe(undefined);
-    expect(result.zones[0].codeFiles).toEqual(['src/a.ts']);
+    expect(result.targets[0].skipped).toBe(undefined);
+    expect(result.targets[0].codeFiles).toEqual(['src/a.ts']);
   });
 
-  it('labels skipped zones in terminal and markdown reports', async () => {
+  it('labels skipped targets in terminal and markdown reports', async () => {
     await repo.write('NOTES.md', 'unrelated change\n');
     repo.git('add', 'NOTES.md');
 
-    const result = await runVerification(config, {
+    const result = await runChecks(config, {
       cwd: repo.dir,
       evaluator,
       gitDiff: { staged: true },
@@ -98,25 +98,25 @@ describe('diff mode zone selection', () => {
     expect(formatMarkdownReport(result)).toContain('SKIPPED');
   });
 
-  it('does not let a broken spec in an untouched zone abort the run', async () => {
+  it('does not let a broken spec in an untouched target abort the run', async () => {
     await repo.write('NOTES.md', 'unrelated change\n');
     repo.git('add', 'NOTES.md');
 
-    const configWithBrokenZone: JevSpecConfig = {
-      zones: {
-        core: config.zones.core,
-        missingSpec: { ...config.zones.core, specPath: 'docs/does-not-exist.md' },
-        typoFilter: { ...config.zones.core, specFilter: { requirementPrefix: 'REQ-TYPO-' } },
+    const configWithBrokenTarget: JevSpecConfig = {
+      targets: {
+        core: config.targets.core,
+        missingSpec: { ...config.targets.core, specPath: 'docs/does-not-exist.md' },
+        typoFilter: { ...config.targets.core, specFilter: { requirementPrefix: 'REQ-TYPO-' } },
       },
     };
 
-    const result = await runVerification(configWithBrokenZone, {
+    const result = await runChecks(configWithBrokenTarget, {
       cwd: repo.dir,
       evaluator,
       gitDiff: { staged: true },
     });
 
-    expect(result.zones.map((zone) => zone.skipped)).toEqual([true, true, true]);
+    expect(result.targets.map((target) => target.skipped)).toEqual([true, true, true]);
     expect(result.passed).toBe(true);
   });
 
@@ -141,22 +141,22 @@ describe('diff mode zone selection', () => {
       }
     });
 
-    it('passes when every zone is skipped, because no evaluation is needed', async () => {
+    it('passes when every target is skipped, because no evaluation is needed', async () => {
       await repo.write('NOTES.md', 'unrelated change\n');
       repo.git('add', 'NOTES.md');
 
-      const result = await runVerification(config, { cwd: repo.dir, gitDiff: { staged: true } });
+      const result = await runChecks(config, { cwd: repo.dir, gitDiff: { staged: true } });
 
-      expect(result.zones[0].skipped).toBe(true);
+      expect(result.targets[0].skipped).toBe(true);
       expect(result.passed).toBe(true);
     });
 
-    it('still reports the missing key as soon as one zone has matching changes', async () => {
+    it('still reports the missing key as soon as one target has matching changes', async () => {
       await repo.write('src/a.ts', 'export const a = 1;\nexport const b = 2;\n');
       repo.git('add', 'src/a.ts');
 
       await assert.rejects(
-        () => runVerification(config, { cwd: repo.dir, gitDiff: { staged: true } }),
+        () => runChecks(config, { cwd: repo.dir, gitDiff: { staged: true } }),
         JevSpecConfigurationError
       );
     });

@@ -25,7 +25,7 @@ describe('CLI argument parsing', () => {
     expect(
       parseCliArgs([
         'check',
-        '--zone',
+        '--target',
         'auth',
         '-f',
         'json',
@@ -35,7 +35,12 @@ describe('CLI argument parsing', () => {
       ])
     ).toEqual({
       kind: 'check',
-      options: { zone: 'auth', format: 'json', output: 'out/result.json', config: 'my.config.ts' },
+      options: {
+        target: 'auth',
+        format: 'json',
+        output: 'out/result.json',
+        config: 'my.config.ts',
+      },
     });
   });
 
@@ -52,7 +57,7 @@ describe('CLI argument parsing', () => {
 
   it('recognises --help and --version anywhere on the command line', () => {
     expect(parseCliArgs(['--help'])).toEqual({ kind: 'help' });
-    expect(parseCliArgs(['check', '--zone', 'auth', '-h'])).toEqual({ kind: 'help' });
+    expect(parseCliArgs(['check', '--target', 'auth', '-h'])).toEqual({ kind: 'help' });
     expect(parseCliArgs(['--version'])).toEqual({ kind: 'version' });
     expect(parseCliArgs(['-v'])).toEqual({ kind: 'version' });
   });
@@ -70,8 +75,8 @@ describe('CLI argument parsing', () => {
   });
 
   it('rejects value options that are missing their value', () => {
-    assert.throws(() => parseCliArgs(['check', '--zone']), CliUsageError);
-    assert.throws(() => parseCliArgs(['check', '--zone', '--staged']), CliUsageError);
+    assert.throws(() => parseCliArgs(['check', '--target']), CliUsageError);
+    assert.throws(() => parseCliArgs(['check', '--target', '--staged']), CliUsageError);
     assert.throws(() => parseCliArgs(['check', '--output=']), CliUsageError);
   });
 

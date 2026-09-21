@@ -16,9 +16,9 @@ export const USAGE = `Usage: jev-spec check [options]
 
 Options:
   -c, --config <file>    Path to the configuration file (default: jev-spec.config.{ts,js,mjs})
-  -z, --zone <name>      Verify a single zone
-      --staged           Verify staged git changes only
-      --diff [range]     Verify a git diff range (default: HEAD), e.g. origin/main...HEAD
+  -t, --target <name>    Check a single target
+      --staged           Check staged git changes only
+      --diff [range]     Check a git diff range (default: HEAD), e.g. origin/main...HEAD
   -f, --format <format>  Output format: terminal (default), markdown, json
   -o, --output <file>    Write the report to a file inside the project root
       --dry-run          Validate config, spec parsing and file matching; evaluates nothing, needs no API key
@@ -26,17 +26,17 @@ Options:
   -h, --help             Show this help
   -v, --version          Show the jev-spec version
 
-Exit codes: 0 = passed, 1 = verification failed, 2 = configuration or runtime error`;
+Exit codes: 0 = passed, 1 = a check failed, 2 = configuration or runtime error`;
 
 const FORMATS = ['terminal', 'markdown', 'json'] as const;
 
-type ValueOptionKey = 'config' | 'zone' | 'format' | 'output';
+type ValueOptionKey = 'config' | 'target' | 'format' | 'output';
 
 const VALUE_OPTIONS: Readonly<Record<string, ValueOptionKey>> = {
   '--config': 'config',
   '-c': 'config',
-  '--zone': 'zone',
-  '-z': 'zone',
+  '--target': 'target',
+  '-t': 'target',
   '--format': 'format',
   '-f': 'format',
   '--output': 'output',
@@ -149,7 +149,7 @@ export function parseCliArgs(argv: readonly string[]): ParsedCli {
 
   const options: CheckCliOptions = {
     ...(values.config !== undefined && { config: values.config }),
-    ...(values.zone !== undefined && { zone: values.zone }),
+    ...(values.target !== undefined && { target: values.target }),
     ...(values.format !== undefined && { format: values.format as (typeof FORMATS)[number] }),
     ...(values.output !== undefined && { output: values.output }),
     ...(staged && { staged: true }),

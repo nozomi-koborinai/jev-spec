@@ -64,8 +64,8 @@ export async function loadConfig(
 
   const config = await importConfigModule(resolvedPath);
 
-  if (!config || typeof config !== 'object' || !('zones' in config)) {
-    throw new Error(`Invalid configuration in ${resolvedPath}: "zones" object is required.`);
+  if (!config || typeof config !== 'object' || !('targets' in config)) {
+    throw new Error(`Invalid configuration in ${resolvedPath}: "targets" object is required.`);
   }
 
   return config as JevSpecConfig;

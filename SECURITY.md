@@ -36,7 +36,7 @@ Because `jev-spec` operates inside developer environments and CI/CD pipelines wh
 
 | Component | Trust Level | Description |
 | :--- | :--- | :--- |
-| **CLI Invocation** | Trusted | Flags passed by the developer or workflow runner (`--zone`, `--config`, etc.). |
+| **CLI Invocation** | Trusted | Flags passed by the developer or workflow runner (`--target`, `--config`, etc.). |
 | **Configuration File** | High Privilege | `jev-spec.config.ts` is executable TypeScript/JavaScript. In CI, it must originate from trusted branches or require maintainer review. |
 | **API Credentials** | Confidential | `TYPESAFE_AI_API_KEY` must never be leaked, committed, or exposed to unreviewed pull requests. |
 | **Source Code & Git Diffs** | Untrusted | In pull request evaluation, source files and diff hunks may contain malicious payloads, symlinks, or prompt injections. |
@@ -86,7 +86,7 @@ Because `jev-spec` operates inside developer environments and CI/CD pipelines wh
 ### 5. Resource Limits & DoS Prevention
 
 - **File Read Bounds**: Individual source files exceeding 2 MB are skipped to prevent memory exhaustion (OOM).
-- **File Count Quota**: A maximum of 500 files is enforced per evaluation zone.
+- **File Count Quota**: A maximum of 500 files is enforced per target.
 - **Prompt Token Budget**: Cumulative context size is bounded to prevent unbounded token costs or timeout errors.
 
 ---

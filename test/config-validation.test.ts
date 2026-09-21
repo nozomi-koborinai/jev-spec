@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { ConfigValidationError, validateConfig } from '../src/config-validation.js';
 import { choice, noul, score } from '../src/dsl.js';
 import type { EvaluationInput, JevEvaluator } from '../src/evaluator/jev-evaluator.js';
-import { runVerification } from '../src/runner/engine.js';
-import type { AnyRubricResult, JevSpecConfig, ZoneConfig } from '../src/types.js';
+import { runChecks } from '../src/runner/engine.js';
+import type { AnyRubricResult, JevSpecConfig, TargetConfig } from '../src/types.js';
 import sampleConfig from './fixtures/sample.config.js';
 import { expect } from './test-utils.js';
 
@@ -14,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pkgRoot = path.resolve(__dirname, '../..');
 
-const baseZone = {
+const baseTarget = {
   specPath: 'test/fixtures/specs/auth-requirements.md',
   codePaths: ['test/fixtures/src/auth.ts'],
   rubrics: {
@@ -25,9 +25,9 @@ const baseZone = {
   assertions: {},
 };
 
-/** Builds a single-zone config; loosely typed on purpose to model hand-written JS configs. */
-function configWith(zoneOverrides: Record<string, unknown>): JevSpecConfig {
-  return { zones: { auth: { ...baseZone, ...zoneOverrides } as unknown as ZoneConfig } };
+/** Builds a single-target config; loosely typed on purpose to model hand-written JS configs. */
+function configWith(targetOverrides: Record<string, unknown>): JevSpecConfig {
+  return { targets: { auth: { ...baseTarget, ...targetOverrides } as unknown as TargetConfig } };
 }
 
 function issuesOf(config: JevSpecConfig): readonly string[] {
@@ -45,6 +45,12 @@ describe('validateConfig', () => {
     expect(issuesOf(sampleConfig)).toEqual([]);
   });
 
+  it('rejects a configuration that still uses the former "targets" key', () => {
+    const legacy = { zones: { auth: baseTarget } } as unknown as JevSpecConfig;
+
+    expect(issuesOf(legacy)).toEqual(['targets: must declare at least one target']);
+  });
+
   it('accepts a rubric that has no assertion (informational rubric)', () => {
     expect(
       issuesOf(configWith({ assertions: { satisfiesRequirements: { minProbability: 0.85 } } }))
@@ -57,7 +63,7 @@ describe('validateConfig', () => {
     );
 
     expect(issues).toHaveLength(1);
-    expect(issues[0]).toContain('zones.auth.assertions.satisfiesRequirement');
+    expect(issues[0]).toContain('targets.auth.assertions.satisfiesRequirement');
   });
 
   it('rejects probability thresholds outside [0, 1]', () => {
@@ -66,7 +72,7 @@ describe('validateConfig', () => {
     );
 
     expect(issues).toHaveLength(1);
-    expect(issues[0]).toContain('zones.auth.assertions.satisfiesRequirements.maxProbability');
+    expect(issues[0]).toContain('targets.auth.assertions.satisfiesRequirements.maxProbability');
   });
 
   it('rejects non-numeric thresholds', () => {
@@ -100,7 +106,7 @@ describe('validateConfig', () => {
     const issues = issuesOf(configWith({ assertions: { satisfiesRequirements: {} } }));
 
     expect(issues).toHaveLength(1);
-    expect(issues[0]).toContain('zones.auth.assertions.satisfiesRequirements');
+    expect(issues[0]).toContain('targets.auth.assertions.satisfiesRequirements');
   });
 
   it('rejects allowedChoices and blockedChoices that are not options of the rubric', () => {
@@ -119,7 +125,7 @@ describe('validateConfig', () => {
     const issues = issuesOf(configWith({ assertions: { completeness: { minScore: 5 } } }));
 
     expect(issues).toHaveLength(1);
-    expect(issues[0]).toContain('zones.auth.assertions.completeness.minScore');
+    expect(issues[0]).toContain('targets.auth.assertions.completeness.minScore');
   });
 
   it('rejects a confidence threshold outside [0, 1]', () => {
@@ -131,7 +137,7 @@ describe('validateConfig', () => {
     expect(issues[0]).toContain('minConfidence');
   });
 
-  it('rejects zones with a missing specPath, no include pattern, or no rubrics', () => {
+  it('rejects targets with a missing specPath, no include pattern, or no rubrics', () => {
     expect(issuesOf(configWith({ specPath: '' })).some((issue) => issue.includes('specPath'))).toBe(
       true
     );
@@ -160,8 +166,8 @@ describe('validateConfig', () => {
     expect(issues).toHaveLength(4);
   });
 
-  it('rejects a configuration without zones', () => {
-    expect(issuesOf({ zones: {} })).toHaveLength(1);
+  it('rejects a configuration without targets', () => {
+    expect(issuesOf({ targets: {} })).toHaveLength(1);
   });
 
   it('reports every issue at once', () => {
@@ -178,7 +184,7 @@ describe('validateConfig', () => {
   });
 });
 
-describe('runVerification configuration gate', () => {
+describe('runChecks configuration gate', () => {
   it('refuses to evaluate an invalid configuration', async () => {
     const calls: EvaluationInput[] = [];
     const evaluator: JevEvaluator = {
@@ -190,13 +196,10 @@ describe('runVerification configuration gate', () => {
 
     await assert.rejects(
       () =>
-        runVerification(
-          configWith({ assertions: { satisfiesRequirement: { minProbability: 0.85 } } }),
-          {
-            cwd: pkgRoot,
-            evaluator,
-          }
-        ),
+        runChecks(configWith({ assertions: { satisfiesRequirement: { minProbability: 0.85 } } }), {
+          cwd: pkgRoot,
+          evaluator,
+        }),
       ConfigValidationError
     );
     expect(calls).toHaveLength(0);
