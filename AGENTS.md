@@ -26,5 +26,5 @@ jev-spec is a **gate**: it verifies source code against Markdown specifications 
 ## Commits, pull requests, releases
 
 - Conventional Commits in English (`fix:`, `feat:`, `docs:`, `chore:`, `refactor:`, `style:`). One logical change per commit; mechanical changes such as formatting get their own commit.
-- Releasing: bump `package.json`, move *Unreleased* to the new version in `CHANGELOG.md`, merge, then push an annotated tag `vX.Y.Z`. The release workflow publishes to npm. Afterwards, replace the auto-generated GitHub Release body with that version's changelog section.
+- Releasing: bump `package.json`, move *Unreleased* to the new version in `CHANGELOG.md`, merge, then push an annotated tag `vX.Y.Z`. The release workflow publishes to npm and uses that version's changelog section as the GitHub Release body. Before it publishes, it stops if the tag does not match `package.json` or if `CHANGELOG.md` has no section for the version (`node scripts/release-notes.mjs vX.Y.Z` runs the same check locally).
 - Publishing to npm cannot be undone. Never push a version tag without the maintainer's explicit go-ahead.

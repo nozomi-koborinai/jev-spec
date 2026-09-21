@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Internal
+
+- The release workflow builds the GitHub Release body from the version's section of `CHANGELOG.md` (`scripts/release-notes.mjs`). It runs before `npm publish` and stops the release when the tag does not match `package.json`, when the changelog has no section for the version, or when that section is empty. `softprops/action-gh-release` moves from `v2`, which is no longer maintained, to `v3` (Node 24 runtime, same inputs).
+
 ## [0.2.0] - 2026-09-21
 
 Adds a way to validate a setup without an API key, and two Agent Skills that set jev-spec up and work through failing checks. No change to how checks are evaluated.

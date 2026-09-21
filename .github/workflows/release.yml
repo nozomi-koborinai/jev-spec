@@ -74,6 +74,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Runs before the publish step on purpose: a tag that does not match package.json, or a
+      # CHANGELOG.md without a section for this version, stops the release while it can still
+      # be stopped.
+      - name: Prepare release notes from CHANGELOG.md
+        run: node scripts/release-notes.mjs "$GITHUB_REF_NAME" > "$RUNNER_TEMP/release-notes.md"
+
       - name: Build production bundle
         run: npm run build
 
@@ -82,7 +88,10 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # The changelog section becomes the release body; GitHub appends the list of merged
+      # pull requests and the compare link.
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
+          body_path: ${{ runner.temp }}/release-notes.md
           generate_release_notes: true
