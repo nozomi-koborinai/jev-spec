@@ -162,7 +162,7 @@ bunx jev-spec check
 npx jev-spec check
 ```
 
-*(提示：运行 `jev-spec check --mock`，或在配置中传入 `client: { mock: true }`，即可在无 API Key 的情况下进行离线测试和本地 CI 模拟。Mock 结果仅为占位数据，所有报告都会明确标注 `MOCK MODE`)。*
+*(提示：还没有 API Key？`jev-spec check --dry-run` 可在不进行任何评估的情况下校验配置、规范解析与文件匹配。`--mock` 则运行离线 Mock 评估器：其结果仅为占位数据，所有报告都会明确标注 `MOCK MODE`)。*
 
 ---
 
@@ -311,16 +311,21 @@ bunx jev-spec check --diff origin/main...HEAD
 
 如果改动的文件与某个 Zone 的 `codePaths` 完全不匹配，该 Zone 会被报告为 `SKIPPED`：不会发送给 Jev，也不影响退出码，因此 pre-commit 钩子不会拦截未涉及该 Zone 的提交。
 
-#### 离线 Mock 模式、帮助与版本
+#### Dry Run、Mock 模式、帮助与版本
 
 ```bash
-# 无需 API Key 的离线运行（结果为占位数据，所有报告均标注 MOCK MODE）
+# 校验配置是否可用：配置、规范解析、文件匹配。不做任何评估，也无需 API Key
+npx jev-spec check --dry-run
+
+# 离线 Mock 评估器（结果为占位数据，所有报告均标注 MOCK MODE）
 npx jev-spec check --mock
 
 # 用法与版本（无需配置文件）
 npx jev-spec --help
 npx jev-spec --version
 ```
+
+Dry Run 会针对每个 Zone 输出找到的规范章节与需求 ID、匹配到的代码文件、将要提出的 Rubric 以及预估成本。对于没有任何 Rubric 提及的需求 ID、未匹配到任何文件的 `codePaths`，以及超出大小预算的代码上下文，它会给出警告。配置有效时退出码为 `0`，存在问题时为 `2`；由于不做任何验证，它不会以 `1` 退出。
 
 未知命令、未知选项、缺少取值的选项以及不支持的 `--format` 取值都会被拒绝，并返回退出码 `2`。
 
@@ -382,7 +387,7 @@ npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
 1. **不可信代码风险**：在公开开源仓库中，外部 PR 可能篡改 `jev-spec.config.ts`、规范或执行脚本。在持有高权限 API 密钥的环境下执行不可信代码存在密钥外泄风险。
 2. **推荐的纵深防御实践**：
-   - **针对 Fork PR 运行离线 Mock 模式**：在外部 PR 检查中使用 Mock 模式（`jev-spec check --mock`），校验配置有效性、规范解析完整性及路径匹配，而不暴露任何 API 密钥。
+   - **针对 Fork PR 运行 Dry Run**：在外部 PR 检查中使用 Dry Run（`jev-spec check --dry-run`），校验配置有效性、规范解析完整性及路径匹配，而不暴露任何 API 密钥。
    - **Environment 审批保护**：若需对外部 PR 执行在线验证，建议使用 GitHub Actions 的 Environment Approvals 功能，由维护者审查 Diff 后再授权提供密钥。
    - **针对 Main 主分支在线验证**：在 `push` 至 `main` 分支及受信内部发布分支上运行完整的真实语义校验。
 
@@ -433,12 +438,9 @@ jobs:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
         run: npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run jev-spec (External Fork / Mock Mode)
+      - name: Run jev-spec (External Fork / Dry Run, No Secrets)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
-        run: |
-          npx jev-spec check --mock \
-            --diff origin/main...HEAD \
-            --format terminal
+        run: npx jev-spec check --dry-run
 ```
 
 push 步骤有意执行完整校验：在 `main` 分支上 `origin/main...HEAD` 是空区间，所有 Zone 都会被跳过。

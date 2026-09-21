@@ -44,7 +44,7 @@ Add `--zone <name>` to re-run a single zone while iterating. Delete the report f
 
 Check two fields before reading verdicts:
 
-- `"mock": true` means the results are **placeholders** from keyword rules, not from the model. They say nothing about the code, so do not chase a mock verdict by editing rubrics, thresholds or code until it turns green. A hook or CI job that gates on `--mock` should accept exit codes 0 and 1 and fail only on 2; tell the owner so. Still read the code against the specification (step 2): a real violation you find that way gets fixed, and reported as found by reading, not by jev-spec.
+- `"mock": true` means the results are **placeholders** from keyword rules, not from the model. They say nothing about the code, so do not chase a mock verdict by editing rubrics, thresholds or code until it turns green. A hook or CI job must not gate on `--mock`: tell the owner to use `--dry-run` there instead (or, on jev-spec 0.1.x, which has no `--dry-run`, to accept exit codes 0 and 1 and fail only on 2). Still read the code against the specification (step 2): a real violation you find that way gets fixed, and reported as found by reading, not by jev-spec.
 - `"skipped": true` on a zone means it was **not evaluated** (`--staged` / `--diff` found no changed file in its `codePaths`). A skipped zone has not been verified.
 
 Then list what the gate covers. Run these now and keep the output: the report in step 4 is built from it. Use the directory that holds the zones' `specPath` files, and adapt the ID pattern to the repository's scheme.

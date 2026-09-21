@@ -162,7 +162,7 @@ bunx jev-spec check
 npx jev-spec check
 ```
 
-*(補足: API キーなしでオフラインテストやローカル CI シミュレーションを行う場合は、`jev-spec check --mock` を実行するか、設定で `client: { mock: true }` を渡してください。モックの結果はプレースホルダであり、すべてのレポートに `MOCK MODE` と明示されます)*
+*(補足: まだ API キーが無い場合は、`jev-spec check --dry-run` で設定・仕様のパース・ファイルのマッチングを検証できます。何も評価しません。`--mock` はオフラインのモック評価器を実行します。その結果はプレースホルダであり、すべてのレポートに `MOCK MODE` と明示されます)*
 
 ---
 
@@ -311,16 +311,21 @@ bunx jev-spec check --diff origin/main...HEAD
 
 変更されたファイルが `codePaths` に 1 つも一致しないゾーンは `SKIPPED` として報告されます。Jev には送信されず、終了コードにも影響しないため、ゾーンに触れていないコミットを pre-commit フックが止めることはありません。
 
-#### オフライン Mock モード・ヘルプ・バージョン
+#### ドライラン・Mock モード・ヘルプ・バージョン
 
 ```bash
-# API キーなしのオフライン実行（結果はプレースホルダで、すべてのレポートに MOCK MODE と表示）
+# セットアップの検証: 設定、仕様のパース、ファイルのマッチング。何も評価せず、API キーも不要
+npx jev-spec check --dry-run
+
+# オフラインのモック評価器（結果はプレースホルダで、すべてのレポートに MOCK MODE と表示）
 npx jev-spec check --mock
 
 # 使い方とバージョン（設定ファイルは不要）
 npx jev-spec --help
 npx jev-spec --version
 ```
+
+ドライランは、ゾーンごとに、見つかった仕様のセクションと要件 ID、マッチしたコードファイル、問い合わせる予定のルーブリック、見積もりコストを表示します。どのルーブリックにも言及されていない要件 ID、どのファイルにも一致しない `codePaths`、サイズ上限を超えるコードコンテキストについては警告します。セットアップが正しければ終了コード `0`、不備があれば `2` で終了します。何も検証しないため、`1` で終了することはありません。
 
 不明なコマンド、不明なオプション、値の欠けたオプション、未対応の `--format` 値は、終了コード `2` で拒否されます。
 
@@ -382,7 +387,7 @@ Jev は判定を **1 秒未満（70ms〜400ms）** で評価するため、ロ�
 
 1. **信頼できないコードのリスク**: パブリックリポジトリでは、PR によって `jev-spec.config.ts`、仕様書、コードが改ざんされる可能性があります。機密性の高い認証情報へのアクセス権を持った状態で信頼できないコードを実行すると、シークレット漏洩の攻撃対象領域となります。
 2. **推奨される多層防御パターン**:
-   - **Fork PR にはオフライン Mock モードを使用**: PR チェックではモックモード（`jev-spec check --mock`）を使用し、API 認証情報を一切公開せずに設定構造、仕様パース、glob パターンの一致を検証します。
+   - **Fork PR にはドライランを使用**: PR チェックではドライラン（`jev-spec check --dry-run`）を使用し、API 認証情報を一切公開せずに設定構造、仕様パース、glob パターンの一致を検証します。
    - **Environment Protection（環境保護ルール）**: 外部 PR でライブ検証を行う場合は、GitHub Actions の Environment Approvals を使用し、メンテナーが差分を確認・承認した後にのみシークレットが利用できるようにします。
    - **main ブランチでの検証**: `main` への push や信頼できる内部リリースのブランチに対してライブのセマンティック検証を実行します。
 
@@ -433,12 +438,9 @@ jobs:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
         run: npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run jev-spec (External Fork / Mock Mode)
+      - name: Run jev-spec (External Fork / Dry Run, No Secrets)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
-        run: |
-          npx jev-spec check --mock \
-            --diff origin/main...HEAD \
-            --format terminal
+        run: npx jev-spec check --dry-run
 ```
 
 push 時のステップは意図的にフル検証を実行します。`main` 上では `origin/main...HEAD` が空の範囲になり、すべてのゾーンがスキップされてしまうためです。
