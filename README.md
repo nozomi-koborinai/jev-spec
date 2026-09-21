@@ -1,5 +1,3 @@
-[English](./README.md) | [日本語](./README.ja.md) | [简体中文](./README.zh.md) | [한국어](./README.ko.md)
-
 # jev-spec
 
 [![npm version](https://img.shields.io/npm/v/jev-spec.svg)](https://www.npmjs.com/package/jev-spec)
@@ -9,6 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 <p align="center"><img src="./assets/hero.png" alt="jev-spec - Specification-Driven Semantic Verification Engine" width="100%" /></p>
+
+🌐 [日本語](README.ja.md) | [简体中文](README.zh.md) | [한국어](README.ko.md)
 
 **Specification-Driven Semantic Verification Engine for AI Code & Specs powered by TypeSafe AI Jev.**
 
