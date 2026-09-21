@@ -2,6 +2,36 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 
 export { test, describe, before, after, assert };
+
+export interface CapturedConsole<T> {
+  readonly result: T;
+  readonly stdout: string;
+  readonly stderr: string;
+}
+
+/**
+ * Runs `fn` while recording everything written through console.log / console.error.
+ */
+export async function captureConsole<T>(fn: () => Promise<T>): Promise<CapturedConsole<T>> {
+  const originalLog = console.log;
+  const originalError = console.error;
+  const out: string[] = [];
+  const err: string[] = [];
+  console.log = (...args: unknown[]) => {
+    out.push(args.map(String).join(' '));
+  };
+  console.error = (...args: unknown[]) => {
+    err.push(args.map(String).join(' '));
+  };
+
+  try {
+    const result = await fn();
+    return { result, stdout: out.join('\n'), stderr: err.join('\n') };
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+  }
+}
 export const expect = (actual: any) => ({
   toBe: (expected: any) => assert.strictEqual(actual, expected),
   toEqual: (expected: any) => assert.deepStrictEqual(actual, expected),
