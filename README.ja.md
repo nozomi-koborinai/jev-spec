@@ -334,15 +334,15 @@ npx jev-spec check
 bunx jev-spec check --target auth
 ```
 
-#### 差分だけのチェック（Pre-commit フックおよび CI）
+#### 差分実行（Pre-commit フックおよび CI）
 
 コードが変更されたターゲットだけをチェックします。選ばれたターゲットは、ファイル全体でチェックされます。
 
 ```bash
-# ステージングされた Git 変更をチェック（pre-commit フックに最適）
+# ステージされた変更が触れたターゲットをチェック（pre-commit フックに最適）
 bunx jev-spec check --staged
 
-# ブランチ範囲の Git 差分をチェック（PR の CI に最適）
+# ブランチ範囲の差分が触れたターゲットをチェック（PR の CI に最適）
 bunx jev-spec check --diff origin/main...HEAD
 ```
 
