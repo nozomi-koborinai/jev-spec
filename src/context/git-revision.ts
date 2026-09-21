@@ -21,14 +21,10 @@ export function assertGitRevision(range: string): void {
   }
 
   if (trimmed.startsWith('-')) {
-    throw new GitRevisionError(
-      `Git revision range must not start with "-": "${trimmed}"`
-    );
+    throw new GitRevisionError(`Git revision range must not start with "-": "${trimmed}"`);
   }
 
   if (!GIT_REVISION_PATTERN.test(trimmed)) {
-    throw new GitRevisionError(
-      `Git revision range contains invalid characters: "${trimmed}"`
-    );
+    throw new GitRevisionError(`Git revision range contains invalid characters: "${trimmed}"`);
   }
 }

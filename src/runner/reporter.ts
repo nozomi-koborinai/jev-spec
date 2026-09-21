@@ -44,7 +44,9 @@ export function formatTerminalReport(result: OverallCheckResult): string {
         lines.push(`       └─ Violation: ${ev.reason}`);
       }
     }
-    lines.push(`  Duration: ${zone.durationMs}ms | Est. cost: $${zone.estimatedCostUsd.toFixed(5)}\n`);
+    lines.push(
+      `  Duration: ${zone.durationMs}ms | Est. cost: $${zone.estimatedCostUsd.toFixed(5)}\n`
+    );
   }
 
   const overallIcon = result.passed ? '✔' : '✖';

@@ -1,6 +1,6 @@
 import { describe, test as it } from 'node:test';
+import { choice, defineConfig, noul, score } from '../src/dsl.js';
 import { expect } from './test-utils.js';
-import { noul, choice, score, defineConfig } from '../src/dsl.js';
 
 describe('jev-spec DSL', () => {
   it('creates noul rubric', () => {
@@ -71,7 +71,10 @@ describe('jev-spec DSL', () => {
           specPath: 'billing.md',
           codePaths: ['src/billing/**/*.ts'],
           rubrics: {
-            posture: choice('Rounding mode', { halfUp: 'Round half up', bankers: 'Round half even' }),
+            posture: choice('Rounding mode', {
+              halfUp: 'Round half up',
+              bankers: 'Round half even',
+            }),
             correct: noul('Are invoices computed correctly?'),
           },
           assertions: {

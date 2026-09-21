@@ -1,14 +1,14 @@
-import { describe, test as it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import { fileURLToPath } from 'node:url';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { expect, captureConsole } from './test-utils.js';
-import { parseCliArgs, CliUsageError } from '../src/cli/args.js';
+import { describe, test as it } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { CliUsageError, parseCliArgs } from '../src/cli/args.js';
 import { main } from '../src/cli/main.js';
+import { captureConsole, expect } from './test-utils.js';
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
@@ -23,7 +23,16 @@ describe('CLI argument parsing', () => {
 
   it('parses value options in both "--name value" and "--name=value" forms', () => {
     expect(
-      parseCliArgs(['check', '--zone', 'auth', '-f', 'json', '--output=out/result.json', '-c', 'my.config.ts'])
+      parseCliArgs([
+        'check',
+        '--zone',
+        'auth',
+        '-f',
+        'json',
+        '--output=out/result.json',
+        '-c',
+        'my.config.ts',
+      ])
     ).toEqual({
       kind: 'check',
       options: { zone: 'auth', format: 'json', output: 'out/result.json', config: 'my.config.ts' },

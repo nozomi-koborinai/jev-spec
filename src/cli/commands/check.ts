@@ -1,8 +1,8 @@
 import * as fs from 'node:fs/promises';
 import { loadConfig } from '../../config.js';
-import { runVerification } from '../../runner/engine.js';
-import { formatTerminalReport, formatMarkdownReport } from '../../runner/reporter.js';
 import { assertInsideRoot } from '../../context/path-security.js';
+import { runVerification } from '../../runner/engine.js';
+import { formatMarkdownReport, formatTerminalReport } from '../../runner/reporter.js';
 
 export interface CheckCliOptions {
   readonly config?: string;

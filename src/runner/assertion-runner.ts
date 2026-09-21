@@ -1,14 +1,14 @@
 import type {
+  AnyAssertion,
   AnyRubric,
   AnyRubricResult,
-  AnyAssertion,
   AssertionEvaluation,
-  NoulResult,
-  ChoiceResult,
-  ScoreResult,
-  NoulAssertion,
   ChoiceAssertion,
+  ChoiceResult,
+  NoulAssertion,
+  NoulResult,
   ScoreAssertion,
+  ScoreResult,
 } from '../types.js';
 
 export function assertRubric(
@@ -47,7 +47,9 @@ export function assertRubric(
  * slip through every threshold. Asserted values must therefore be finite numbers.
  */
 function nonFiniteReason(label: string, value: number): string | undefined {
-  return Number.isFinite(value) ? undefined : `Evaluator returned a non-numeric ${label} (${value})`;
+  return Number.isFinite(value)
+    ? undefined
+    : `Evaluator returned a non-numeric ${label} (${value})`;
 }
 
 function assertNoul(

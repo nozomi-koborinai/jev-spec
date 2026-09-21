@@ -1,20 +1,20 @@
-import { describe, test as it } from 'node:test';
 import assert from 'node:assert/strict';
-import { fileURLToPath } from 'node:url';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { expect } from './test-utils.js';
+import { describe, test as it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
-  loadSpec,
-  SpecFilterError,
-  parseMarkdownSections,
+  buildSectionsFromAst,
   extractRequirementIds,
   extractTags,
   filterSections,
-  buildSectionsFromAst,
+  loadSpec,
   parseMarkdownAst,
+  parseMarkdownSections,
+  SpecFilterError,
 } from '../src/parser/markdown-parser.js';
+import { expect } from './test-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -132,7 +132,11 @@ Round half up.
   it('rejects a specFilter that matches no section instead of sending the whole document', async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jev-spec-parser-'));
     try {
-      await fs.writeFile(path.join(dir, 'spec.md'), '# Spec\n\n## REQ-AUTH-01\nVerify tokens.\n', 'utf-8');
+      await fs.writeFile(
+        path.join(dir, 'spec.md'),
+        '# Spec\n\n## REQ-AUTH-01\nVerify tokens.\n',
+        'utf-8'
+      );
 
       await assert.rejects(
         () => loadSpec('spec.md', dir, { requirementPrefix: 'REQ-AUHT-' }),

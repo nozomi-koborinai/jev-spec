@@ -21,9 +21,12 @@ export async function createTempGitRepo(prefix = 'jev-spec-git-'): Promise<TempG
     execFileSync(
       'git',
       [
-        '-c', 'user.name=jev-spec-test',
-        '-c', 'user.email=test@jev-spec.invalid',
-        '-c', 'commit.gpgsign=false',
+        '-c',
+        'user.name=jev-spec-test',
+        '-c',
+        'user.email=test@jev-spec.invalid',
+        '-c',
+        'commit.gpgsign=false',
         ...args,
       ],
       { cwd: dir, encoding: 'utf-8' }

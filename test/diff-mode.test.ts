@@ -1,15 +1,15 @@
-import { describe, test as it, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { expect } from './test-utils.js';
-import { createTempGitRepo, type TempGitRepo } from './git-test-utils.js';
-import { runVerification } from '../src/runner/engine.js';
-import { formatTerminalReport, formatMarkdownReport } from '../src/runner/reporter.js';
+import { after, before, beforeEach, describe, test as it } from 'node:test';
 import {
-  JevSpecConfigurationError,
   type EvaluationInput,
   type JevEvaluator,
+  JevSpecConfigurationError,
 } from '../src/evaluator/jev-evaluator.js';
+import { runVerification } from '../src/runner/engine.js';
+import { formatMarkdownReport, formatTerminalReport } from '../src/runner/reporter.js';
 import type { AnyRubricResult, JevSpecConfig } from '../src/types.js';
+import { createTempGitRepo, type TempGitRepo } from './git-test-utils.js';
+import { expect } from './test-utils.js';
 
 class RecordingEvaluator implements JevEvaluator {
   readonly calls: EvaluationInput[] = [];

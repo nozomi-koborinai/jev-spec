@@ -54,7 +54,9 @@ function validateRubric(path: string, rubric: unknown, issues: string[]): Rubric
     rubric.levels.length < MIN_SCORE_LEVELS ||
     rubric.levels.length > MAX_SCORE_LEVELS
   ) {
-    issues.push(`${path}.levels: must list between ${MIN_SCORE_LEVELS} and ${MAX_SCORE_LEVELS} levels`);
+    issues.push(
+      `${path}.levels: must list between ${MIN_SCORE_LEVELS} and ${MAX_SCORE_LEVELS} levels`
+    );
     return undefined;
   }
 
@@ -75,7 +77,9 @@ function validateThreshold(
     return undefined;
   }
   if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) {
-    issues.push(`${path}: must be a number between ${min} and ${max}, got ${JSON.stringify(value)}`);
+    issues.push(
+      `${path}: must be a number between ${min} and ${max}, got ${JSON.stringify(value)}`
+    );
     return undefined;
   }
   return value;
@@ -139,7 +143,9 @@ function validateAssertion(
   }
 
   if (keys.length === 0) {
-    issues.push(`${path}: sets no threshold, so it can never fail (valid options: ${allowed.join(', ')})`);
+    issues.push(
+      `${path}: sets no threshold, so it can never fail (valid options: ${allowed.join(', ')})`
+    );
     return;
   }
 
@@ -181,7 +187,9 @@ function validateZone(path: string, zone: unknown, issues: string[]): void {
     !codePaths.every(isNonEmptyString) ||
     !codePaths.some((pattern) => !pattern.startsWith('!'))
   ) {
-    issues.push(`${path}.codePaths: must be an array of glob strings with at least one include pattern`);
+    issues.push(
+      `${path}.codePaths: must be an array of glob strings with at least one include pattern`
+    );
   }
 
   const rubricTypes = new Map<string, RubricType | undefined>();

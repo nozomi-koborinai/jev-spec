@@ -75,9 +75,7 @@ export async function assertInsideRoot(root: string, targetPath: string): Promis
       } catch {
         const parent = path.dirname(ancestor);
         if (parent === ancestor) {
-          throw new PathSecurityError(
-            `Failed to resolve path "${targetPath}" within project root`
-          );
+          throw new PathSecurityError(`Failed to resolve path "${targetPath}" within project root`);
         }
         ancestor = parent;
       }
@@ -85,8 +83,7 @@ export async function assertInsideRoot(root: string, targetPath: string): Promis
   }
 
   const relative = path.relative(canonicalRoot, canonicalTarget);
-  const isInside =
-    relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  const isInside = relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 
   if (!isInside) {
     throw new PathSecurityError(
@@ -103,8 +100,7 @@ export async function assertInsideRoot(root: string, targetPath: string): Promis
 export function assertInsideRootSync(root: string, canonicalTarget: string): string {
   const resolvedRoot = path.resolve(root);
   const relative = path.relative(resolvedRoot, canonicalTarget);
-  const isInside =
-    relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  const isInside = relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 
   if (!isInside) {
     throw new PathSecurityError(

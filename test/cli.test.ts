@@ -1,11 +1,11 @@
-import { describe, test as it, after, beforeEach } from 'node:test';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { after, beforeEach, describe, test as it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { expect, captureConsole } from './test-utils.js';
-import { checkCommand } from '../src/cli/commands/check.js';
 import { parseCliArgs } from '../src/cli/args.js';
+import { checkCommand } from '../src/cli/commands/check.js';
+import { captureConsole, expect } from './test-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -116,7 +116,10 @@ describe('CLI check command', () => {
     // The spec file does not exist: if verification ran first, the error would be ENOENT.
     await fs.writeFile(
       configPath,
-      LIVE_CONFIG_SOURCE.replace('test/fixtures/specs/auth-requirements.md', 'test/fixtures/specs/missing.md'),
+      LIVE_CONFIG_SOURCE.replace(
+        'test/fixtures/specs/auth-requirements.md',
+        'test/fixtures/specs/missing.md'
+      ),
       'utf-8'
     );
 

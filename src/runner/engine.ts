@@ -1,20 +1,20 @@
-import { loadSpec } from '../parser/markdown-parser.js';
+import { validateConfig } from '../config-validation.js';
 import { extractCodeContext } from '../context/code-extractor.js';
+import type { GitDiffOptions } from '../context/types.js';
 import {
   createJevEvaluator,
-  MockJevEvaluator,
   type JevEvaluator,
+  MockJevEvaluator,
 } from '../evaluator/jev-evaluator.js';
-import { assertRubric } from './assertion-runner.js';
-import { validateConfig } from '../config-validation.js';
+import { loadSpec } from '../parser/markdown-parser.js';
 import type {
   AnyRubric,
+  AssertionEvaluation,
   JevSpecConfig,
   OverallCheckResult,
   ZoneCheckResult,
-  AssertionEvaluation,
 } from '../types.js';
-import type { GitDiffOptions } from '../context/types.js';
+import { assertRubric } from './assertion-runner.js';
 
 export interface RunOptions {
   readonly cwd?: string;

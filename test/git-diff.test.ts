@@ -1,7 +1,7 @@
-import { describe, test as it, before, after } from 'node:test';
-import { expect } from './test-utils.js';
-import { createTempGitRepo, type TempGitRepo } from './git-test-utils.js';
+import { after, before, describe, test as it } from 'node:test';
 import { extractGitDiff } from '../src/context/git-diff.js';
+import { createTempGitRepo, type TempGitRepo } from './git-test-utils.js';
+import { expect } from './test-utils.js';
 
 describe('extractGitDiff against a real git repository', () => {
   let repo: TempGitRepo;

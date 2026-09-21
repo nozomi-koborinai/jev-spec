@@ -1,31 +1,28 @@
-import { describe, test as it } from 'node:test';
 import assert from 'node:assert/strict';
-import { fileURLToPath } from 'node:url';
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
-import { expect } from './test-utils.js';
+import * as path from 'node:path';
+import { describe, test as it } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { extractCodeFromPaths } from '../src/context/code-extractor.js';
+import { extractGitDiff } from '../src/context/git-diff.js';
+import { assertGitRevision, GitRevisionError } from '../src/context/git-revision.js';
+import { resolveGlobPatterns } from '../src/context/glob-matcher.js';
 import {
   assertInsideRoot,
-  validateGlobPattern,
-  PathSecurityError,
-  MAX_FILE_SIZE_BYTES,
   MAX_FILE_COUNT,
+  MAX_FILE_SIZE_BYTES,
+  PathSecurityError,
+  validateGlobPattern,
 } from '../src/context/path-security.js';
-import { assertGitRevision, GitRevisionError } from '../src/context/git-revision.js';
+import { JevSpecConfigurationError, resolveBaseUrl } from '../src/evaluator/jev-evaluator.js';
 import {
-  wrapSpecificationContext,
-  wrapSourceCodeContext,
   buildSecureEvaluationState,
+  wrapSourceCodeContext,
+  wrapSpecificationContext,
 } from '../src/evaluator/prompt-security.js';
-import {
-  resolveBaseUrl,
-  JevSpecConfigurationError,
-} from '../src/evaluator/jev-evaluator.js';
 import { loadSpec } from '../src/parser/markdown-parser.js';
-import { extractCodeFromPaths } from '../src/context/code-extractor.js';
-import { resolveGlobPatterns } from '../src/context/glob-matcher.js';
-import { extractGitDiff } from '../src/context/git-diff.js';
+import { expect } from './test-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,17 +35,11 @@ describe('Path security (S-01 / S-02)', () => {
   });
 
   it('rejects paths that escape project root via ..', async () => {
-    await assert.rejects(
-      () => assertInsideRoot(pkgRoot, '../../../etc/passwd'),
-      PathSecurityError
-    );
+    await assert.rejects(() => assertInsideRoot(pkgRoot, '../../../etc/passwd'), PathSecurityError);
   });
 
   it('rejects absolute paths outside project root', async () => {
-    await assert.rejects(
-      () => assertInsideRoot(pkgRoot, '/etc/passwd'),
-      PathSecurityError
-    );
+    await assert.rejects(() => assertInsideRoot(pkgRoot, '/etc/passwd'), PathSecurityError);
   });
 
   it('rejects glob patterns with leading /', () => {
@@ -60,17 +51,11 @@ describe('Path security (S-01 / S-02)', () => {
   });
 
   it('rejects loading spec files outside project root', async () => {
-    await assert.rejects(
-      () => loadSpec('../../../etc/passwd', pkgRoot),
-      PathSecurityError
-    );
+    await assert.rejects(() => loadSpec('../../../etc/passwd', pkgRoot), PathSecurityError);
   });
 
   it('rejects extractCodeFromPaths for files outside root', async () => {
-    await assert.rejects(
-      () => extractCodeFromPaths(['/etc/passwd'], pkgRoot),
-      PathSecurityError
-    );
+    await assert.rejects(() => extractCodeFromPaths(['/etc/passwd'], pkgRoot), PathSecurityError);
   });
 
   it('skips symlinks that escape project root', async () => {
@@ -171,9 +156,6 @@ describe('Resource limits', () => {
 
   it('rejects extractCodeFromPaths when file count exceeds limit', async () => {
     const tooMany = Array.from({ length: MAX_FILE_COUNT + 1 }, (_, i) => `file${i}.ts`);
-    await assert.rejects(
-      () => extractCodeFromPaths(tooMany, pkgRoot),
-      PathSecurityError
-    );
+    await assert.rejects(() => extractCodeFromPaths(tooMany, pkgRoot), PathSecurityError);
   });
 });

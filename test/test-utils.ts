@@ -1,7 +1,7 @@
-import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, before, describe, test } from 'node:test';
 
-export { test, describe, before, after, assert };
+export { after, assert, before, describe, test };
 
 export interface CapturedConsole<T> {
   readonly result: T;

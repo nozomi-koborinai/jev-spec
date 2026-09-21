@@ -1,9 +1,9 @@
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createJiti } from 'jiti';
-import type { JevSpecConfig } from './types.js';
 import { assertInsideRoot } from './context/path-security.js';
+import type { JevSpecConfig } from './types.js';
 
 export const DEFAULT_CONFIG_FILENAMES = [
   'jev-spec.config.ts',

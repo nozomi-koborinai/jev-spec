@@ -1,10 +1,10 @@
+import * as path from 'node:path';
 import fg from 'fast-glob';
 import micromatch from 'micromatch';
-import * as path from 'node:path';
 import {
   assertInsideRoot,
-  validateGlobPattern,
   DEFAULT_SENSITIVE_IGNORE_PATTERNS,
+  validateGlobPattern,
 } from './path-security.js';
 
 /**
@@ -66,8 +66,7 @@ export function matchesGlobPatterns(relativePath: string, patterns: readonly str
   ];
 
   const included =
-    include.length === 0 ||
-    include.some((pattern) => micromatch.isMatch(normalized, pattern));
+    include.length === 0 || include.some((pattern) => micromatch.isMatch(normalized, pattern));
   const excluded = ignore.some((pattern) => micromatch.isMatch(normalized, pattern));
 
   return included && !excluded;

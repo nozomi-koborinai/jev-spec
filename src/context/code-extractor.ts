@@ -1,14 +1,14 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { CodeExtractionOptions } from './types.js';
-import { resolveGlobPatterns, matchesGlobPatterns } from './glob-matcher.js';
 import { extractGitDiff, formatDiffContext } from './git-diff.js';
+import { matchesGlobPatterns, resolveGlobPatterns } from './glob-matcher.js';
 import {
   assertInsideRoot,
   MAX_FILE_COUNT,
   MAX_FILE_SIZE_BYTES,
   PathSecurityError,
 } from './path-security.js';
+import type { CodeExtractionOptions } from './types.js';
 
 export interface CodeFileContext {
   readonly relativePath: string;
@@ -140,9 +140,7 @@ function buildExtractedContext(
   let combinedPromptContext =
     mode === 'diff' && diffFormatted !== undefined
       ? diffFormatted
-      : files
-          .map((file) => `--- File: ${file.relativePath} ---\n${file.content}`)
-          .join('\n\n');
+      : files.map((file) => `--- File: ${file.relativePath} ---\n${file.content}`).join('\n\n');
 
   if (combinedPromptContext.length > maxChars) {
     combinedPromptContext = `${combinedPromptContext.slice(0, maxChars)}\n\n[... truncated for token budget ...]`;

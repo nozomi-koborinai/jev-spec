@@ -1,14 +1,14 @@
-import { describe, test as it } from 'node:test';
 import assert from 'node:assert/strict';
-import { fileURLToPath } from 'node:url';
 import * as path from 'node:path';
-import { expect } from './test-utils.js';
-import { validateConfig, ConfigValidationError } from '../src/config-validation.js';
-import { runVerification } from '../src/runner/engine.js';
-import { noul, choice, score } from '../src/dsl.js';
+import { describe, test as it } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { ConfigValidationError, validateConfig } from '../src/config-validation.js';
+import { choice, noul, score } from '../src/dsl.js';
 import type { EvaluationInput, JevEvaluator } from '../src/evaluator/jev-evaluator.js';
+import { runVerification } from '../src/runner/engine.js';
 import type { AnyRubricResult, JevSpecConfig, ZoneConfig } from '../src/types.js';
 import sampleConfig from './fixtures/sample.config.js';
+import { expect } from './test-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,25 +46,33 @@ describe('validateConfig', () => {
   });
 
   it('accepts a rubric that has no assertion (informational rubric)', () => {
-    expect(issuesOf(configWith({ assertions: { satisfiesRequirements: { minProbability: 0.85 } } }))).toEqual([]);
+    expect(
+      issuesOf(configWith({ assertions: { satisfiesRequirements: { minProbability: 0.85 } } }))
+    ).toEqual([]);
   });
 
   it('rejects an assertion whose key matches no rubric', () => {
-    const issues = issuesOf(configWith({ assertions: { satisfiesRequirement: { minProbability: 0.85 } } }));
+    const issues = issuesOf(
+      configWith({ assertions: { satisfiesRequirement: { minProbability: 0.85 } } })
+    );
 
     expect(issues).toHaveLength(1);
     expect(issues[0]).toContain('zones.auth.assertions.satisfiesRequirement');
   });
 
   it('rejects probability thresholds outside [0, 1]', () => {
-    const issues = issuesOf(configWith({ assertions: { satisfiesRequirements: { maxProbability: 15 } } }));
+    const issues = issuesOf(
+      configWith({ assertions: { satisfiesRequirements: { maxProbability: 15 } } })
+    );
 
     expect(issues).toHaveLength(1);
     expect(issues[0]).toContain('zones.auth.assertions.satisfiesRequirements.maxProbability');
   });
 
   it('rejects non-numeric thresholds', () => {
-    const issues = issuesOf(configWith({ assertions: { satisfiesRequirements: { minProbability: '0.85' } } }));
+    const issues = issuesOf(
+      configWith({ assertions: { satisfiesRequirements: { minProbability: '0.85' } } })
+    );
 
     expect(issues).toHaveLength(1);
     expect(issues[0]).toContain('minProbability');
@@ -72,14 +80,18 @@ describe('validateConfig', () => {
 
   it('rejects minProbability greater than maxProbability', () => {
     const issues = issuesOf(
-      configWith({ assertions: { satisfiesRequirements: { minProbability: 0.9, maxProbability: 0.2 } } })
+      configWith({
+        assertions: { satisfiesRequirements: { minProbability: 0.9, maxProbability: 0.2 } },
+      })
     );
 
     expect(issues).toHaveLength(1);
   });
 
   it('rejects assertion options that do not belong to the rubric type', () => {
-    const issues = issuesOf(configWith({ assertions: { satisfiesRequirements: { allowedChoices: ['secure'] } } }));
+    const issues = issuesOf(
+      configWith({ assertions: { satisfiesRequirements: { allowedChoices: ['secure'] } } })
+    );
 
     expect(issues.some((issue) => issue.includes('allowedChoices'))).toBe(true);
   });
@@ -93,7 +105,9 @@ describe('validateConfig', () => {
 
   it('rejects allowedChoices and blockedChoices that are not options of the rubric', () => {
     const issues = issuesOf(
-      configWith({ assertions: { securityPosture: { allowedChoices: ['secur'], blockedChoices: ['unsafe'] } } })
+      configWith({
+        assertions: { securityPosture: { allowedChoices: ['secur'], blockedChoices: ['unsafe'] } },
+      })
     );
 
     expect(issues).toHaveLength(2);
@@ -109,16 +123,26 @@ describe('validateConfig', () => {
   });
 
   it('rejects a confidence threshold outside [0, 1]', () => {
-    const issues = issuesOf(configWith({ assertions: { completeness: { minScore: 1, minConfidence: 70 } } }));
+    const issues = issuesOf(
+      configWith({ assertions: { completeness: { minScore: 1, minConfidence: 70 } } })
+    );
 
     expect(issues).toHaveLength(1);
     expect(issues[0]).toContain('minConfidence');
   });
 
   it('rejects zones with a missing specPath, no include pattern, or no rubrics', () => {
-    expect(issuesOf(configWith({ specPath: '' })).some((issue) => issue.includes('specPath'))).toBe(true);
-    expect(issuesOf(configWith({ codePaths: ['!src/**/*.test.ts'] })).some((issue) => issue.includes('codePaths'))).toBe(true);
-    expect(issuesOf(configWith({ rubrics: {} })).some((issue) => issue.includes('rubrics'))).toBe(true);
+    expect(issuesOf(configWith({ specPath: '' })).some((issue) => issue.includes('specPath'))).toBe(
+      true
+    );
+    expect(
+      issuesOf(configWith({ codePaths: ['!src/**/*.test.ts'] })).some((issue) =>
+        issue.includes('codePaths')
+      )
+    ).toBe(true);
+    expect(issuesOf(configWith({ rubrics: {} })).some((issue) => issue.includes('rubrics'))).toBe(
+      true
+    );
   });
 
   it('rejects malformed rubrics', () => {
@@ -166,10 +190,13 @@ describe('runVerification configuration gate', () => {
 
     await assert.rejects(
       () =>
-        runVerification(configWith({ assertions: { satisfiesRequirement: { minProbability: 0.85 } } }), {
-          cwd: pkgRoot,
-          evaluator,
-        }),
+        runVerification(
+          configWith({ assertions: { satisfiesRequirement: { minProbability: 0.85 } } }),
+          {
+            cwd: pkgRoot,
+            evaluator,
+          }
+        ),
       ConfigValidationError
     );
     expect(calls).toHaveLength(0);
