@@ -117,6 +117,40 @@ describe('dry run', () => {
     expect(formatTerminalReport(result)).toContain(ids[1]);
   });
 
+  it('counts a requirement as covered when a rubric is named after it', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jev-spec-dry-run-names-'));
+    try {
+      await fs.mkdir(path.join(dir, 'src'));
+      await fs.writeFile(path.join(dir, 'src', 'a.ts'), 'export const a = 1;\n', 'utf-8');
+      await fs.writeFile(
+        path.join(dir, 'spec.md'),
+        '# Spec\n\n## REQ-A-01\nFirst.\n\n## REQ-A-02\nSecond.\n\n## REQ-A-03\nThird.\n',
+        'utf-8'
+      );
+      // The ID belongs in the name: the name is never sent to the model, and an ID inside the
+      // question made the model less able to tell intact code from broken code.
+      const config: JevSpecConfig = {
+        targets: {
+          a: {
+            specPath: 'spec.md',
+            codePaths: ['src/**/*.ts'],
+            rubrics: {
+              'REQ-A-01': { type: 'noul', question: 'Is the constant exported?' },
+              'REQ-A-02 exportsConstant': { type: 'noul', question: 'Is the constant a number?' },
+            },
+            assertions: {},
+          },
+        },
+      };
+
+      const result = await runChecks(config, { cwd: dir, dryRun: true });
+
+      expect(result.targets[0].plan?.unreferencedRequirementIds).toEqual(['REQ-A-03']);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('does not mistake REQ-AUTH-1 for REQ-AUTH-10 when matching requirement IDs', async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jev-spec-dry-run-ids-'));
     try {
