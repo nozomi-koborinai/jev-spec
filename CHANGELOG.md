@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-21
+
+Adds a way to validate a setup without an API key, and two Agent Skills that set jev-spec up and work through failing checks. No change to how checks are evaluated.
+
 ### Added
 
 - `jev-spec check --dry-run` validates a setup without evaluating anything: configuration, spec parsing and file matching. It needs no API key, prints per zone what would be sent (spec sections, requirement IDs, code files, context sizes, rubrics, estimated cost), and exits with `0` when the setup is valid or `2` when it is not. It warns about requirement IDs that no rubric mentions, `codePaths` that match no file, and a code context that would be cut at the size budget. JSON output gains `dryRun` and a per-zone `plan`. It cannot be combined with `--mock`.
@@ -23,6 +27,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Internal
 
 - Biome now lints and formats the code base. `npm run lint` runs `biome check --error-on-warnings .`, `npm run lint:fix` applies formatting and safe fixes, and CI runs the lint step.
+
+### Upgrade notes
+
+- If a workflow or hook runs `jev-spec check --mock` only to confirm that the setup works, switch it to `--dry-run`. Mock mode still exists, but its exit code `1` reflects placeholder verdicts, not a problem with the setup.
+- TypeScript users who build a `JevSpecConfig` object by hand, without `defineConfig`, may see new compile errors where `any` used to hide a mistake. Configurations written with `defineConfig` are unaffected.
 
 ## [0.1.1] - 2026-09-21
 
@@ -64,6 +73,7 @@ A bug-fix release. Several of these bugs made a check pass, fail or get skipped 
 
 - Initial release.
 
-[Unreleased]: https://github.com/nozomi-koborinai/jev-spec/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/nozomi-koborinai/jev-spec/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/nozomi-koborinai/jev-spec/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/nozomi-koborinai/jev-spec/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nozomi-koborinai/jev-spec/releases/tag/v0.1.0
