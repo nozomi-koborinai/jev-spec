@@ -1,9 +1,14 @@
 import { describe, test as it, before, after, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
 import { expect } from './test-utils.js';
 import { createTempGitRepo, type TempGitRepo } from './git-test-utils.js';
 import { runVerification } from '../src/runner/engine.js';
 import { formatTerminalReport, formatMarkdownReport } from '../src/runner/reporter.js';
-import type { EvaluationInput, JevEvaluator } from '../src/evaluator/jev-evaluator.js';
+import {
+  JevSpecConfigurationError,
+  type EvaluationInput,
+  type JevEvaluator,
+} from '../src/evaluator/jev-evaluator.js';
 import type { AnyRubricResult, JevSpecConfig } from '../src/types.js';
 
 class RecordingEvaluator implements JevEvaluator {
@@ -91,5 +96,69 @@ describe('diff mode zone selection', () => {
 
     expect(formatTerminalReport(result)).toContain('SKIPPED');
     expect(formatMarkdownReport(result)).toContain('SKIPPED');
+  });
+
+  it('does not let a broken spec in an untouched zone abort the run', async () => {
+    await repo.write('NOTES.md', 'unrelated change\n');
+    repo.git('add', 'NOTES.md');
+
+    const configWithBrokenZone: JevSpecConfig = {
+      zones: {
+        core: config.zones.core,
+        missingSpec: { ...config.zones.core, specPath: 'docs/does-not-exist.md' },
+        typoFilter: { ...config.zones.core, specFilter: { requirementPrefix: 'REQ-TYPO-' } },
+      },
+    };
+
+    const result = await runVerification(configWithBrokenZone, {
+      cwd: repo.dir,
+      evaluator,
+      gitDiff: { staged: true },
+    });
+
+    expect(result.zones.map((zone) => zone.skipped)).toEqual([true, true, true]);
+    expect(result.passed).toBe(true);
+  });
+
+  describe('without an API key', () => {
+    const savedKeys = {
+      TYPESAFE_AI_API_KEY: process.env.TYPESAFE_AI_API_KEY,
+      TYPESAFE_API_KEY: process.env.TYPESAFE_API_KEY,
+    };
+
+    beforeEach(() => {
+      delete process.env.TYPESAFE_AI_API_KEY;
+      delete process.env.TYPESAFE_API_KEY;
+    });
+
+    after(() => {
+      for (const [name, value] of Object.entries(savedKeys)) {
+        if (value === undefined) {
+          delete process.env[name];
+        } else {
+          process.env[name] = value;
+        }
+      }
+    });
+
+    it('passes when every zone is skipped, because no evaluation is needed', async () => {
+      await repo.write('NOTES.md', 'unrelated change\n');
+      repo.git('add', 'NOTES.md');
+
+      const result = await runVerification(config, { cwd: repo.dir, gitDiff: { staged: true } });
+
+      expect(result.zones[0].skipped).toBe(true);
+      expect(result.passed).toBe(true);
+    });
+
+    it('still reports the missing key as soon as one zone has matching changes', async () => {
+      await repo.write('src/a.ts', 'export const a = 1;\nexport const b = 2;\n');
+      repo.git('add', 'src/a.ts');
+
+      await assert.rejects(
+        () => runVerification(config, { cwd: repo.dir, gitDiff: { staged: true } }),
+        JevSpecConfigurationError
+      );
+    });
   });
 });
