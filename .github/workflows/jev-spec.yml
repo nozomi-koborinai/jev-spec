@@ -1,0 +1,45 @@
+name: jev-spec
+
+# jev-spec checks itself against docs/specs/. The job is advisory for now: it reports, and it
+# never blocks a merge. It becomes a required check once it has been quiet for a while.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-specs:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      # Empty for pull requests from forks: GitHub does not hand secrets to them.
+      TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # Without a key there is nothing to ask the model, so validate the setup instead.
+      - name: Dry run (no API key available)
+        if: env.TYPESAFE_AI_API_KEY == ''
+        run: node bin/jev-spec.js check --dry-run --format markdown >> "$GITHUB_STEP_SUMMARY"
+
+      # A full run on purpose, for pull requests too. A diff run sends only the changed hunks,
+      # and the rubrics ask about code that is usually outside them.
+      - name: Check the code against the specs
+        if: env.TYPESAFE_AI_API_KEY != ''
+        run: node bin/jev-spec.js check --format markdown >> "$GITHUB_STEP_SUMMARY"
