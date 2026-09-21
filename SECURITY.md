@@ -59,7 +59,7 @@ Because `jev-spec` operates inside developer environments and CI/CD pipelines wh
 
 - **Safe Command Invocation**: Git diff execution is handled strictly via `child_process.execFile('git', args)` without an intermediary shell, eliminating shell command injection.
 - **Revision Sanitization**: The `--diff <range>` parameter is strictly validated (`assertGitRevision()`) against allowed revision syntax (`[A-Za-z0-9._/~^:-]`). Arguments starting with `-` (such as `--output=/path` or `--no-index`) are rejected to prevent file creation or truncation.
-- **Argument Delimiters**: User-provided revision ranges are explicitly isolated behind `--` delimiters in git arguments.
+- **Argument Delimiters**: Option parsing is terminated with `--end-of-options` before the user-provided revision range, and the range is followed by `--` so it can never be read as an option or a pathspec.
 - **Execution Timeouts**: A hard 15-second timeout is enforced on all git diff executions to avoid runner deadlocks on corrupted repositories.
 
 ### 3. Prompt Isolation & Anti-Prompt-Injection Framing (S-04)

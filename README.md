@@ -403,7 +403,7 @@ jobs:
 | Security Control | Implementation Guarantee |
 | :--- | :--- |
 | **Path Traversal & Root Jail** | Workspace paths are strictly validated using realpath resolution (`assertInsideRoot()`). Absolute paths outside cwd, `..` directory traversal, and symlinks escaping the repository root are rejected. |
-| **Git Revision Sanitization** | Arguments passed to `--diff` are validated against strict git revision patterns (`assertGitRevision()`). Rejects flags starting with `-` (blocking option injection like `--output`), isolates range parameters behind `--`, and enforces a 15-second command timeout. |
+| **Git Revision Sanitization** | Arguments passed to `--diff` are validated against strict git revision patterns (`assertGitRevision()`). Rejects flags starting with `-` (blocking option injection like `--output`), terminates option parsing with `--end-of-options` before the revision range, and enforces a 15-second command timeout. |
 | **Prompt Boundary Protection** | Untrusted specification and implementation contents are isolated within delimited tags (`<specification_context>` and `<untrusted_source_code>`) accompanied by strict anti-prompt-injection framing instructing Jev to disregard instructions embedded within source files. |
 | **Base URL SSRF Protection** | By default, requests are routed exclusively to official TypeSafe AI endpoints (`https://api.typesafe.ai`). Custom API base URLs are blocked unless `allowCustomBaseUrl: true` is explicitly configured. |
 | **Resource Bounds** | Prevents denial-of-service and runaway memory consumption by enforcing strict limits: max 500 files per scan, 2MB file size cap, and bounded character truncation per evaluation prompt. |
