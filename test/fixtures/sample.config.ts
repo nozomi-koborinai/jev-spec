@@ -1,4 +1,4 @@
-import { defineConfig, noul, choice, score } from '../../src/index.js';
+import { choice, defineConfig, noul, score } from '../../src/index.js';
 
 export default defineConfig({
   client: {
@@ -30,9 +30,9 @@ export default defineConfig({
         ]),
       },
       assertions: {
-        satisfiesRequirements: { minProbability: 0.80 },
+        satisfiesRequirements: { minProbability: 0.8 },
         introducesUnspecifiedBehavior: { maxProbability: 0.15 },
-        securityPosture: { allowedChoices: ['secure'], minConfidence: 0.70 },
+        securityPosture: { allowedChoices: ['secure'], minConfidence: 0.7 },
         implementationCompleteness: { minScore: 1.5 },
       },
     },

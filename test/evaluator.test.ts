@@ -1,13 +1,13 @@
-import { describe, test as it, before, after } from 'node:test';
-import { expect } from './test-utils.js';
+import { after, before, describe, test as it } from 'node:test';
+import { choice, noul, score } from '../src/dsl.js';
 import {
-  MockJevEvaluator,
-  LiveJevEvaluator,
-  JevSpecConfigurationError,
   createJevEvaluator,
+  JevSpecConfigurationError,
+  LiveJevEvaluator,
+  MockJevEvaluator,
   resolveApiKey,
 } from '../src/evaluator/jev-evaluator.js';
-import { noul, choice, score } from '../src/dsl.js';
+import { expect } from './test-utils.js';
 
 describe('Jev evaluator', () => {
   const originalApiKey = process.env.TYPESAFE_AI_API_KEY;
@@ -61,7 +61,8 @@ describe('Jev evaluator', () => {
     const evaluator = new MockJevEvaluator();
     const results = await evaluator.evaluate({
       specContext: 'REQ-01: verify tokens',
-      codeContext: 'export function verifyToken(token: string) { return token.startsWith("valid"); }',
+      codeContext:
+        'export function verifyToken(token: string) { return token.startsWith("valid"); }',
       rubrics: {
         satisfies: noul('Does the implementation satisfy the specification?'),
         posture: choice('Security posture', {

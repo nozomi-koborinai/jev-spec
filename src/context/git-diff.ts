@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { GitDiffOptions, GitDiffResult, ParsedDiffFile, ParsedDiffHunk } from './types.js';
 import { assertGitRevision, GIT_DIFF_TIMEOUT_MS } from './git-revision.js';
+import type { GitDiffOptions, GitDiffResult, ParsedDiffFile, ParsedDiffHunk } from './types.js';
 
 const execFileAsync = promisify(execFile);
 

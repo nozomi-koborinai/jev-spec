@@ -1,10 +1,10 @@
+import * as path from 'node:path';
 import { describe, test as it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import * as path from 'node:path';
-import { expect } from './test-utils.js';
-import { parseUnifiedDiff, formatDiffContext } from '../src/context/git-diff.js';
-import { resolveGlobPatterns, matchesGlobPatterns } from '../src/context/glob-matcher.js';
 import { extractCodeContext } from '../src/context/code-extractor.js';
+import { formatDiffContext, parseUnifiedDiff } from '../src/context/git-diff.js';
+import { matchesGlobPatterns, resolveGlobPatterns } from '../src/context/glob-matcher.js';
+import { expect } from './test-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,9 +42,9 @@ describe('Git diff and code extraction', () => {
   });
 
   it('matches glob include and ignore patterns', () => {
-    expect(
-      matchesGlobPatterns('test/fixtures/src/auth.ts', ['test/fixtures/src/**/*.ts'])
-    ).toBe(true);
+    expect(matchesGlobPatterns('test/fixtures/src/auth.ts', ['test/fixtures/src/**/*.ts'])).toBe(
+      true
+    );
     expect(
       matchesGlobPatterns('test/fixtures/src/auth.test.ts', [
         'test/fixtures/src/**/*.ts',

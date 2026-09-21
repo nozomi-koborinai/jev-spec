@@ -1,4 +1,4 @@
-import type { Root, Heading, Paragraph, List, ListItem, Table } from 'mdast';
+import type { Heading, List, ListItem, Paragraph, Root, Table } from 'mdast';
 
 export interface RequirementNode {
   readonly id: string;

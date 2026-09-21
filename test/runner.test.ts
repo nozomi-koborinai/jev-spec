@@ -1,11 +1,11 @@
+import * as path from 'node:path';
 import { describe, test as it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import * as path from 'node:path';
-import { expect } from './test-utils.js';
+import { type JevEvaluator, MockJevEvaluator } from '../src/evaluator/jev-evaluator.js';
 import { runVerification } from '../src/runner/engine.js';
-import { formatTerminalReport, formatMarkdownReport } from '../src/runner/reporter.js';
-import { MockJevEvaluator, type JevEvaluator } from '../src/evaluator/jev-evaluator.js';
+import { formatMarkdownReport, formatTerminalReport } from '../src/runner/reporter.js';
 import sampleConfig from './fixtures/sample.config.js';
+import { expect } from './test-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,7 +71,10 @@ describe('jev-spec Runner & Engine', () => {
       },
     };
 
-    const result = await runVerification(sampleConfig, { cwd: pkgRoot, evaluator: liveLikeEvaluator });
+    const result = await runVerification(sampleConfig, {
+      cwd: pkgRoot,
+      evaluator: liveLikeEvaluator,
+    });
 
     expect(result.passed).toBe(true);
     expect(result.mock).toBe(undefined);

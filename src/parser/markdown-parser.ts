@@ -1,10 +1,10 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { assertInsideRoot } from '../context/path-security.js';
+import type { Heading, PhrasingContent, Root } from 'mdast';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { gfm } from 'micromark-extension-gfm';
-import type { Root, Heading, PhrasingContent } from 'mdast';
+import { assertInsideRoot } from '../context/path-security.js';
 import type { SpecFilter } from '../types.js';
 import type { MarkdownAst, RequirementNode, SpecSectionNode } from './types.js';
 
@@ -45,7 +45,10 @@ export function buildRequirementPatterns(prefixes: readonly string[]): RegExp[] 
 /**
  * Extracts requirement IDs (e.g. REQ-AUTH-01, AC-GDPR-02) from text.
  */
-export function extractRequirementIds(text: string, prefixes?: string | readonly string[]): string[] {
+export function extractRequirementIds(
+  text: string,
+  prefixes?: string | readonly string[]
+): string[] {
   const prefixList =
     prefixes === undefined
       ? DEFAULT_REQUIREMENT_PREFIXES
@@ -197,9 +200,7 @@ function serializeNode(node: unknown): string {
     return (typed.children ?? []).map((child) => serializeNode(child)).join('');
   }
   if (typed.type === 'list') {
-    return (typed.children ?? [])
-      .map((child) => `- ${serializeNode(child)}`)
-      .join('\n');
+    return (typed.children ?? []).map((child) => `- ${serializeNode(child)}`).join('\n');
   }
   if (typed.type === 'table') {
     return '[table omitted]';
@@ -213,7 +214,10 @@ function serializeNode(node: unknown): string {
 /**
  * Parses markdown into structured sections by heading (legacy-compatible API).
  */
-export function parseMarkdownSections(content: string, prefixes?: string | readonly string[]): SpecSection[] {
+export function parseMarkdownSections(
+  content: string,
+  prefixes?: string | readonly string[]
+): SpecSection[] {
   const prefixList =
     prefixes === undefined
       ? DEFAULT_REQUIREMENT_PREFIXES
@@ -338,9 +342,7 @@ export async function loadSpec(
       ? filteredSections
           .map((section) => {
             const ids =
-              section.requirementIds.length > 0
-                ? ` [${section.requirementIds.join(', ')}]`
-                : '';
+              section.requirementIds.length > 0 ? ` [${section.requirementIds.join(', ')}]` : '';
             return `### ${section.title}${ids}\n${section.content}`;
           })
           .join('\n\n')

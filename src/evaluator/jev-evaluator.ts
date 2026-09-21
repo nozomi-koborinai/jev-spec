@@ -1,17 +1,17 @@
 import {
-  TypeSafeClient,
-  noul as sdkNoul,
-  choice as sdkChoice,
-  score as sdkScore,
   type Questions,
+  choice as sdkChoice,
+  noul as sdkNoul,
+  score as sdkScore,
+  TypeSafeClient,
 } from '@typesafe-ai/sdk';
 import type {
   AnyRubric,
   AnyRubricResult,
-  NoulRubric,
   ChoiceRubric,
-  ScoreRubric,
   JevClientConfig,
+  NoulRubric,
+  ScoreRubric,
 } from '../types.js';
 import { buildSecureEvaluationState } from './prompt-security.js';
 
@@ -108,8 +108,7 @@ export class MockJevEvaluator implements JevEvaluator {
       q.includes('undocumented')
     ) {
       const hasBypass =
-        input.codeContext.includes('bypass') ||
-        input.codeContext.includes('secret-dev-override');
+        input.codeContext.includes('bypass') || input.codeContext.includes('secret-dev-override');
       return {
         type: 'noul' as const,
         probability: hasBypass ? 0.91 : 0.04,

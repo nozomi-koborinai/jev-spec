@@ -1,4 +1,4 @@
-import { parseCliArgs, CliUsageError, USAGE, type ParsedCli } from './args.js';
+import { CliUsageError, type ParsedCli, parseCliArgs, USAGE } from './args.js';
 import { checkCommand } from './commands/check.js';
 import { readPackageVersion } from './version.js';
 

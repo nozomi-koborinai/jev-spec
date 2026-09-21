@@ -1,9 +1,9 @@
-import { describe, test as it, after } from 'node:test';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { expect } from './test-utils.js';
+import { after, describe, test as it } from 'node:test';
 import { loadConfig } from '../src/config.js';
+import { expect } from './test-utils.js';
 
 const CONFIG_SOURCE = `import { defineConfig, noul } from 'jev-spec';
 

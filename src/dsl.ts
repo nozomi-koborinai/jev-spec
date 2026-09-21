@@ -1,10 +1,10 @@
 import type {
   AnyRubric,
-  NoulRubric,
   ChoiceRubric,
-  ScoreRubric,
   JevClientConfig,
   JevSpecConfig,
+  NoulRubric,
+  ScoreRubric,
   ZoneConfig,
 } from './types.js';
 
