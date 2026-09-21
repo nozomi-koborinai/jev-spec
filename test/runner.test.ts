@@ -51,21 +51,23 @@ describe('jev-spec Runner & Engine', () => {
     const liveLikeEvaluator: JevEvaluator = {
       async evaluate() {
         return {
-          satisfiesRequirements: { type: 'noul', probability: 0.97 },
-          introducesUnspecifiedBehavior: { type: 'noul', probability: 0.02 },
-          securityPosture: {
-            type: 'choice',
-            choice: 'secure',
-            confidence: 0.93,
-            distribution: { secure: 0.93, insecure: 0.07 },
-          },
-          implementationCompleteness: {
-            type: 'score',
-            score: 1.9,
-            maxScore: 2,
-            confidence: 0.9,
-            selectedLevel: 'Feature Complete',
-            levelProbabilities: [0.02, 0.06, 0.92],
+          answers: {
+            satisfiesRequirements: { type: 'noul', probability: 0.97 },
+            introducesUnspecifiedBehavior: { type: 'noul', probability: 0.02 },
+            securityPosture: {
+              type: 'choice',
+              choice: 'secure',
+              confidence: 0.93,
+              distribution: { secure: 0.93, insecure: 0.07 },
+            },
+            implementationCompleteness: {
+              type: 'score',
+              score: 1.9,
+              maxScore: 2,
+              confidence: 0.9,
+              selectedLevel: 'Feature Complete',
+              levelProbabilities: [0.02, 0.06, 0.92],
+            },
           },
         };
       },
@@ -86,21 +88,23 @@ describe('jev-spec Runner & Engine', () => {
     const driftedEvaluator: JevEvaluator = {
       async evaluate() {
         return {
-          satisfiesRequirements: { type: 'noul', probability: 0.08 },
-          introducesUnspecifiedBehavior: { type: 'noul', probability: 0.02 },
-          securityPosture: {
-            type: 'choice',
-            choice: 'secure',
-            confidence: 0.93,
-            distribution: { secure: 0.93, insecure: 0.07 },
-          },
-          implementationCompleteness: {
-            type: 'score',
-            score: 1.9,
-            maxScore: 2,
-            confidence: 0.9,
-            selectedLevel: 'Feature Complete',
-            levelProbabilities: [0.02, 0.06, 0.92],
+          answers: {
+            satisfiesRequirements: { type: 'noul', probability: 0.08 },
+            introducesUnspecifiedBehavior: { type: 'noul', probability: 0.02 },
+            securityPosture: {
+              type: 'choice',
+              choice: 'secure',
+              confidence: 0.93,
+              distribution: { secure: 0.93, insecure: 0.07 },
+            },
+            implementationCompleteness: {
+              type: 'score',
+              score: 1.9,
+              maxScore: 2,
+              confidence: 0.9,
+              selectedLevel: 'Feature Complete',
+              levelProbabilities: [0.02, 0.06, 0.92],
+            },
           },
         };
       },

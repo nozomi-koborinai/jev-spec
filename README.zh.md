@@ -20,6 +20,7 @@ $ npx jev-spec check
 Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
+  Model: jev-1.13.0
     ✔ verifiesSessionTokens: probability: 0.97
     ✖ rejectsRevokedTokens: probability: 0.08
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
@@ -293,6 +294,19 @@ export interface TargetConfig {
 ```
 
 `specFilter` 会保留满足全部条件的章节及其嵌套的子章节，因此写在更深层标题下的细节仍然属于该需求。若过滤条件未匹配到任何章节，将被视为配置错误（退出码 `2`），而不是悄悄发送整份文档。
+
+### 固定模型版本
+
+```typescript
+export default defineConfig({
+  client: { model: 'jev-1.13.0' },
+  targets: {
+    // …
+  },
+});
+```
+
+未设置 `client.model` 时，jev-spec 会请求 `jev-latest`。这是一个别名，TypeSafe 每次发布新模型都会让它指向新版本，因此即使你的仓库没有任何改动，结果也可能发生变化。调整好阈值之后，请固定为调整时所用的[带版本号的模型 ID](https://docs.typesafe.ai/models)（也可以通过 `TYPESAFE_DEFAULT_MODEL` 设置）。每份报告都会显示实际作答的模型（`Model: jev-1.13.0`）；在模型尚未固定时，`--dry-run` 会给出警告。
 
 ### CLI 命令参考
 

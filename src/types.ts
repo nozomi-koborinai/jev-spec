@@ -87,6 +87,11 @@ export interface JevClientConfig {
   readonly allowCustomBaseUrl?: boolean;
   readonly timeoutMs?: number;
   readonly mock?: boolean;
+  /**
+   * Model that answers, ideally a versioned ID such as `jev-1.13.0`. Falls back to
+   * `TYPESAFE_DEFAULT_MODEL`, then to the alias `jev-latest`, which moves with every release.
+   */
+  readonly model?: string;
 }
 
 // Top-level Configuration
@@ -156,6 +161,8 @@ export interface TargetCheckResult {
   readonly skipReason?: string;
   /** Present in a dry run instead of evaluations. */
   readonly plan?: TargetPlan;
+  /** Versioned ID of the model that answered, as the API reported it. Absent when nothing was sent. */
+  readonly model?: string;
 }
 
 export interface OverallCheckResult {
@@ -163,6 +170,8 @@ export interface OverallCheckResult {
   readonly mock?: boolean;
   /** True when nothing was evaluated: configuration, spec parsing and file matching only. */
   readonly dryRun?: boolean;
+  /** Dry run only: warnings about the setup as a whole, such as a model that is not pinned. */
+  readonly warnings?: readonly string[];
   readonly passed: boolean;
   readonly targets: readonly TargetCheckResult[];
   readonly totalDurationMs: number;

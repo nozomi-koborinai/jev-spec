@@ -59,7 +59,7 @@ describe('Jev evaluator', () => {
 
   it('evaluates noul, choice, and score rubrics in parallel via mock', async () => {
     const evaluator = new MockJevEvaluator();
-    const results = await evaluator.evaluate({
+    const { answers } = await evaluator.evaluate({
       specContext: 'REQ-01: verify tokens',
       codeContext:
         'export function verifyToken(token: string) { return token.startsWith("valid"); }',
@@ -73,8 +73,8 @@ describe('Jev evaluator', () => {
       },
     });
 
-    expect(results.satisfies.type).toBe('noul');
-    expect(results.posture.type).toBe('choice');
-    expect(results.completeness.type).toBe('score');
+    expect(answers.satisfies.type).toBe('noul');
+    expect(answers.posture.type).toBe('choice');
+    expect(answers.completeness.type).toBe('score');
   });
 });

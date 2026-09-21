@@ -20,6 +20,7 @@ $ npx jev-spec check
 Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
+  Model: jev-1.13.0
     ✔ verifiesSessionTokens: probability: 0.97
     ✖ rejectsRevokedTokens: probability: 0.08
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
@@ -293,6 +294,19 @@ export interface TargetConfig {
 ```
 
 `specFilter`는 주어진 모든 조건을 만족하는 섹션을 그 하위 섹션과 함께 유지하므로, 더 깊은 제목 아래에 작성된 세부 내용도 요구 사항의 일부로 남습니다. 어떤 섹션과도 일치하지 않는 필터는 문서 전체를 조용히 전송하는 대신 설정 오류(종료 코드 `2`)로 처리됩니다.
+
+### 모델 고정
+
+```typescript
+export default defineConfig({
+  client: { model: 'jev-1.13.0' },
+  targets: {
+    // …
+  },
+});
+```
+
+`client.model`을 지정하지 않으면 jev-spec은 `jev-latest`에 질의합니다. 이것은 TypeSafe가 새 릴리스마다 가리키는 대상을 바꾸는 별칭이므로, 저장소에 아무 변경이 없어도 결과가 달라질 수 있습니다. 임계값을 조정했다면, 조정에 사용한 [버전이 명시된 모델 ID](https://docs.typesafe.ai/models)로 고정하세요(`TYPESAFE_DEFAULT_MODEL`로도 지정할 수 있습니다). 모든 보고서에는 실제로 응답한 모델이 표시되며(`Model: jev-1.13.0`), 모델을 고정하지 않은 동안에는 `--dry-run`이 경고합니다.
 
 ### CLI 명령어 레퍼런스
 

@@ -4,9 +4,13 @@ import { describe, test as it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { ConfigValidationError, validateConfig } from '../src/config-validation.js';
 import { choice, noul, score } from '../src/dsl.js';
-import type { EvaluationInput, JevEvaluator } from '../src/evaluator/jev-evaluator.js';
+import type {
+  EvaluationInput,
+  EvaluationOutput,
+  JevEvaluator,
+} from '../src/evaluator/jev-evaluator.js';
 import { runChecks } from '../src/runner/engine.js';
-import type { AnyRubricResult, JevSpecConfig, TargetConfig } from '../src/types.js';
+import type { JevSpecConfig, TargetConfig } from '../src/types.js';
 import sampleConfig from './fixtures/sample.config.js';
 import { expect } from './test-utils.js';
 
@@ -188,9 +192,9 @@ describe('runChecks configuration gate', () => {
   it('refuses to evaluate an invalid configuration', async () => {
     const calls: EvaluationInput[] = [];
     const evaluator: JevEvaluator = {
-      async evaluate(input): Promise<Record<string, AnyRubricResult>> {
+      async evaluate(input): Promise<EvaluationOutput> {
         calls.push(input);
-        return {};
+        return { answers: {} };
       },
     };
 
