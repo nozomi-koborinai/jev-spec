@@ -9,7 +9,7 @@ import { checkCommand } from '../src/cli/commands/check.js';
 import { extractCodeContext } from '../src/context/code-extractor.js';
 import type { JevEvaluator } from '../src/evaluator/jev-evaluator.js';
 import { SpecFilterError } from '../src/parser/markdown-parser.js';
-import { runVerification } from '../src/runner/engine.js';
+import { runChecks } from '../src/runner/engine.js';
 import { formatMarkdownReport, formatTerminalReport } from '../src/runner/reporter.js';
 import type { JevSpecConfig, OverallCheckResult } from '../src/types.js';
 import { captureConsole, expect } from './test-utils.js';
@@ -20,7 +20,7 @@ const pkgRoot = path.resolve(__dirname, '../..');
 
 /** No `client.mock` and no API key: a real run of this config cannot even start. */
 const liveConfig: JevSpecConfig = {
-  zones: {
+  targets: {
     auth: {
       specPath: 'test/fixtures/specs/auth-requirements.md',
       codePaths: ['test/fixtures/src/**/*.ts', '!**/*.test.ts'],
@@ -69,39 +69,39 @@ describe('dry run', () => {
     }
   });
 
-  it('needs no API key and reports what each zone would send', async () => {
-    const result = await runVerification(liveConfig, { cwd: pkgRoot, dryRun: true });
+  it('needs no API key and reports what each target would send', async () => {
+    const result = await runChecks(liveConfig, { cwd: pkgRoot, dryRun: true });
 
     expect(result.dryRun).toBe(true);
     expect(result.passed).toBe(true);
 
-    const zone = result.zones[0];
-    expect(zone.codeFiles).toEqual(['test/fixtures/src/auth.ts']);
-    expect(zone.evaluations).toHaveLength(0);
-    expect(zone.plan?.requirementIds).toEqual(['REQ-AUTH-01', 'REQ-AUTH-02']);
-    expect(zone.plan?.rubrics).toEqual(['verifiesSessionTokens', 'rejectsRevokedTokens']);
-    expect(zone.plan?.warnings).toEqual([]);
-    assert.ok((zone.plan?.specChars ?? 0) > 0, 'specChars should be reported');
-    assert.ok((zone.plan?.codeChars ?? 0) > 0, 'codeChars should be reported');
+    const target = result.targets[0];
+    expect(target.codeFiles).toEqual(['test/fixtures/src/auth.ts']);
+    expect(target.evaluations).toHaveLength(0);
+    expect(target.plan?.requirementIds).toEqual(['REQ-AUTH-01', 'REQ-AUTH-02']);
+    expect(target.plan?.rubrics).toEqual(['verifiesSessionTokens', 'rejectsRevokedTokens']);
+    expect(target.plan?.warnings).toEqual([]);
+    assert.ok((target.plan?.specChars ?? 0) > 0, 'specChars should be reported');
+    assert.ok((target.plan?.codeChars ?? 0) > 0, 'codeChars should be reported');
   });
 
   it('lists the requirements that no rubric names', async () => {
     const partial: JevSpecConfig = {
-      zones: {
+      targets: {
         auth: {
-          ...liveConfig.zones.auth,
-          rubrics: { verifiesSessionTokens: liveConfig.zones.auth.rubrics.verifiesSessionTokens },
+          ...liveConfig.targets.auth,
+          rubrics: { verifiesSessionTokens: liveConfig.targets.auth.rubrics.verifiesSessionTokens },
           assertions: { verifiesSessionTokens: { minProbability: 0.85 } },
         },
       },
     };
 
-    const covered = await runVerification(liveConfig, { cwd: pkgRoot, dryRun: true });
-    const result = await runVerification(partial, { cwd: pkgRoot, dryRun: true });
+    const covered = await runChecks(liveConfig, { cwd: pkgRoot, dryRun: true });
+    const result = await runChecks(partial, { cwd: pkgRoot, dryRun: true });
 
-    expect(covered.zones[0].plan?.unreferencedRequirementIds).toEqual([]);
-    expect(result.zones[0].plan?.unreferencedRequirementIds).toEqual(['REQ-AUTH-02']);
-    expect(result.zones[0].plan?.warnings).toHaveLength(1);
+    expect(covered.targets[0].plan?.unreferencedRequirementIds).toEqual([]);
+    expect(result.targets[0].plan?.unreferencedRequirementIds).toEqual(['REQ-AUTH-02']);
+    expect(result.targets[0].plan?.warnings).toHaveLength(1);
     expect(formatTerminalReport(result)).toContain('REQ-AUTH-02');
   });
 
@@ -116,7 +116,7 @@ describe('dry run', () => {
         'utf-8'
       );
       const config: JevSpecConfig = {
-        zones: {
+        targets: {
           auth: {
             specPath: 'spec.md',
             codePaths: ['src/**/*.ts'],
@@ -128,16 +128,16 @@ describe('dry run', () => {
         },
       };
 
-      const result = await runVerification(config, { cwd: dir, dryRun: true });
+      const result = await runChecks(config, { cwd: dir, dryRun: true });
 
-      expect(result.zones[0].plan?.unreferencedRequirementIds).toEqual(['REQ-AUTH-1']);
+      expect(result.targets[0].plan?.unreferencedRequirementIds).toEqual(['REQ-AUTH-1']);
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }
   });
 
   it('never calls the evaluator', async () => {
-    const result = await runVerification(liveConfig, {
+    const result = await runChecks(liveConfig, {
       cwd: pkgRoot,
       dryRun: true,
       evaluator: explodingEvaluator,
@@ -148,27 +148,26 @@ describe('dry run', () => {
 
   it('still fails on a broken setup, such as a specFilter that matches nothing', async () => {
     const broken: JevSpecConfig = {
-      zones: {
-        auth: { ...liveConfig.zones.auth, specFilter: { requirementPrefix: 'REQ-AUHT-' } },
+      targets: {
+        auth: { ...liveConfig.targets.auth, specFilter: { requirementPrefix: 'REQ-AUHT-' } },
       },
     };
 
-    await assert.rejects(
-      () => runVerification(broken, { cwd: pkgRoot, dryRun: true }),
-      SpecFilterError
-    );
+    await assert.rejects(() => runChecks(broken, { cwd: pkgRoot, dryRun: true }), SpecFilterError);
   });
 
-  it('warns when the codePaths of a zone match no file', async () => {
+  it('warns when the codePaths of a target match no file', async () => {
     const empty: JevSpecConfig = {
-      zones: { auth: { ...liveConfig.zones.auth, codePaths: ['test/fixtures/nowhere/**/*.ts'] } },
+      targets: {
+        auth: { ...liveConfig.targets.auth, codePaths: ['test/fixtures/nowhere/**/*.ts'] },
+      },
     };
 
-    const result = await runVerification(empty, { cwd: pkgRoot, dryRun: true });
+    const result = await runChecks(empty, { cwd: pkgRoot, dryRun: true });
 
     expect(result.passed).toBe(true);
-    expect(result.zones[0].plan?.warnings).toHaveLength(1);
-    expect(result.zones[0].plan?.warnings[0]).toContain('matched no file');
+    expect(result.targets[0].plan?.warnings).toHaveLength(1);
+    expect(result.targets[0].plan?.warnings[0]).toContain('matched no file');
   });
 
   it('flags a code context that was cut at the character budget', async () => {
@@ -183,7 +182,7 @@ describe('dry run', () => {
   });
 
   it('labels the reports as a dry run and never claims that checks passed', async () => {
-    const result = await runVerification(liveConfig, { cwd: pkgRoot, dryRun: true });
+    const result = await runChecks(liveConfig, { cwd: pkgRoot, dryRun: true });
 
     const terminal = formatTerminalReport(result);
     expect(terminal).toContain('DRY RUN');
@@ -202,9 +201,9 @@ describe('dry run', () => {
       passed: true,
       totalDurationMs: 1,
       totalEstimatedCostUsd: 0,
-      zones: [
+      targets: [
         {
-          zoneName: 'auth',
+          targetName: 'auth',
           specFiles: ['spec.md'],
           codeFiles: [],
           passed: true,
@@ -261,7 +260,7 @@ describe('dry run from the command line', () => {
     expect(result).toBe(0);
     const report = JSON.parse(stdout) as OverallCheckResult;
     expect(report.dryRun).toBe(true);
-    expect(report.zones[0].plan?.requirementIds).toEqual(['REQ-AUTH-01', 'REQ-AUTH-02']);
+    expect(report.targets[0].plan?.requirementIds).toEqual(['REQ-AUTH-01', 'REQ-AUTH-02']);
   });
 
   it('exits 2 when the setup is broken', async () => {

@@ -171,17 +171,17 @@ function validateAssertion(
   validateThreshold(`${path}.minConfidence`, assertion.minConfidence, 0, 1, issues);
 }
 
-function validateZone(path: string, zone: unknown, issues: string[]): void {
-  if (!isRecord(zone)) {
+function validateTarget(path: string, target: unknown, issues: string[]): void {
+  if (!isRecord(target)) {
     issues.push(`${path}: must be an object`);
     return;
   }
 
-  if (!isNonEmptyString(zone.specPath)) {
+  if (!isNonEmptyString(target.specPath)) {
     issues.push(`${path}.specPath: must be a non-empty string`);
   }
 
-  const codePaths = zone.codePaths;
+  const codePaths = target.codePaths;
   if (
     !Array.isArray(codePaths) ||
     !codePaths.every(isNonEmptyString) ||
@@ -193,20 +193,20 @@ function validateZone(path: string, zone: unknown, issues: string[]): void {
   }
 
   const rubricTypes = new Map<string, RubricType | undefined>();
-  if (!isRecord(zone.rubrics) || Object.keys(zone.rubrics).length === 0) {
+  if (!isRecord(target.rubrics) || Object.keys(target.rubrics).length === 0) {
     issues.push(`${path}.rubrics: must declare at least one rubric`);
   } else {
-    for (const [name, rubric] of Object.entries(zone.rubrics)) {
+    for (const [name, rubric] of Object.entries(target.rubrics)) {
       rubricTypes.set(name, validateRubric(`${path}.rubrics.${name}`, rubric, issues));
     }
   }
 
-  if (!isRecord(zone.assertions)) {
-    issues.push(`${path}.assertions: must be an object (use {} for informational zones)`);
+  if (!isRecord(target.assertions)) {
+    issues.push(`${path}.assertions: must be an object (use {} for informational targets)`);
     return;
   }
 
-  for (const [name, assertion] of Object.entries(zone.assertions)) {
+  for (const [name, assertion] of Object.entries(target.assertions)) {
     const assertionPath = `${path}.assertions.${name}`;
     if (!rubricTypes.has(name)) {
       const known = [...rubricTypes.keys()].join(', ') || 'none';
@@ -218,7 +218,7 @@ function validateZone(path: string, zone: unknown, issues: string[]): void {
     if (rubricType === undefined) {
       continue; // the rubric itself is already reported as invalid
     }
-    const rubric = (zone.rubrics as Record<string, Record<string, unknown>>)[name];
+    const rubric = (target.rubrics as Record<string, Record<string, unknown>>)[name];
     validateAssertion(assertionPath, assertion, rubricType, rubric, issues);
   }
 }
@@ -231,13 +231,13 @@ function validateZone(path: string, zone: unknown, issues: string[]): void {
  */
 export function validateConfig(config: JevSpecConfig): void {
   const issues: string[] = [];
-  const zones: unknown = (config as { zones?: unknown } | null | undefined)?.zones;
+  const targets: unknown = (config as { targets?: unknown } | null | undefined)?.targets;
 
-  if (!isRecord(zones) || Object.keys(zones).length === 0) {
-    issues.push('zones: must declare at least one zone');
+  if (!isRecord(targets) || Object.keys(targets).length === 0) {
+    issues.push('targets: must declare at least one target');
   } else {
-    for (const [name, zone] of Object.entries(zones)) {
-      validateZone(`zones.${name}`, zone, issues);
+    for (const [name, target] of Object.entries(targets)) {
+      validateTarget(`targets.${name}`, target, issues);
     }
   }
 

@@ -12,13 +12,13 @@ import type {
   AssertionEvaluation,
   JevSpecConfig,
   OverallCheckResult,
-  ZoneCheckResult,
+  TargetCheckResult,
 } from '../types.js';
 import { assertRubric } from './assertion-runner.js';
 
 export interface RunOptions {
   readonly cwd?: string;
-  readonly zone?: string;
+  readonly target?: string;
   readonly evaluator?: JevEvaluator;
   readonly gitDiff?: GitDiffOptions;
   /** Validate configuration, spec parsing and file matching without evaluating anything. */
@@ -36,7 +36,7 @@ function rubricText(rubric: AnyRubric): string {
   return [rubric.description, ...rubric.levels].join('\n');
 }
 
-/** Requirement IDs of the specification that no rubric mentions. jev-spec does not verify them. */
+/** Requirement IDs of the specification that no rubric mentions. jev-spec does not check them. */
 function findUnreferencedRequirementIds(
   requirementIds: readonly string[],
   rubrics: Readonly<Record<string, AnyRubric>>
@@ -59,23 +59,23 @@ function planWarnings(
   const warnings: string[] = [];
   if (unreferencedRequirementIds.length > 0) {
     warnings.push(
-      `no rubric names ${unreferencedRequirementIds.join(', ')}: jev-spec does not verify these requirements`
+      `no rubric names ${unreferencedRequirementIds.join(', ')}: jev-spec does not check these requirements`
     );
   }
   if (codeContext.files.length === 0) {
     warnings.push(
-      'codePaths matched no file: the zone would be evaluated against an empty implementation'
+      'codePaths matched no file: the target would be evaluated against an empty implementation'
     );
   }
   if (codeContext.truncated) {
     warnings.push(
-      'the code context exceeds the character budget and would be cut: narrow codePaths or split the zone'
+      'the code context exceeds the character budget and would be cut: narrow codePaths or split the target'
     );
   }
   return warnings;
 }
 
-export async function runVerification(
+export async function runChecks(
   config: JevSpecConfig,
   options: RunOptions = {}
 ): Promise<OverallCheckResult> {
@@ -84,47 +84,47 @@ export async function runVerification(
   const cwd = options.cwd ?? process.cwd();
   const startTime = Date.now();
 
-  // Created on first use: a run in which every zone is skipped needs no API key.
+  // Created on first use: a run in which every target is skipped needs no API key.
   let evaluator = options.evaluator;
   const getEvaluator = (): JevEvaluator => (evaluator ??= createJevEvaluator(config.client));
   const isMock = options.evaluator
     ? options.evaluator instanceof MockJevEvaluator
     : Boolean(config.client?.mock);
 
-  const zoneNames = options.zone ? [options.zone] : Object.keys(config.zones);
+  const targetNames = options.target ? [options.target] : Object.keys(config.targets);
 
-  const zoneResults: ZoneCheckResult[] = [];
+  const targetResults: TargetCheckResult[] = [];
 
-  for (const zoneName of zoneNames) {
-    const zoneConfig = config.zones[zoneName];
-    if (!zoneConfig) {
-      throw new Error(`Zone "${zoneName}" not found in configuration`);
+  for (const targetName of targetNames) {
+    const targetConfig = config.targets[targetName];
+    if (!targetConfig) {
+      throw new Error(`Target "${targetName}" not found in configuration`);
     }
 
-    const zoneStart = Date.now();
+    const targetStart = Date.now();
 
-    const codeContext = await extractCodeContext(zoneConfig.codePaths, {
+    const codeContext = await extractCodeContext(targetConfig.codePaths, {
       cwd,
       gitDiff: options.gitDiff,
     });
 
-    // Decide this before touching the spec, so an untouched zone can never fail the run.
+    // Decide this before touching the spec, so an untouched target can never fail the run.
     if (codeContext.mode === 'diff' && codeContext.files.length === 0) {
-      zoneResults.push({
-        zoneName,
-        specFiles: [zoneConfig.specPath],
+      targetResults.push({
+        targetName,
+        specFiles: [targetConfig.specPath],
         codeFiles: [],
         passed: true,
         evaluations: [],
-        durationMs: Date.now() - zoneStart,
+        durationMs: Date.now() - targetStart,
         estimatedCostUsd: 0,
         skipped: true,
-        skipReason: 'No changed files match the codePaths of this zone',
+        skipReason: 'No changed files match the codePaths of this target',
       });
       continue;
     }
 
-    const parsedSpec = await loadSpec(zoneConfig.specPath, cwd, zoneConfig.specFilter);
+    const parsedSpec = await loadSpec(targetConfig.specPath, cwd, targetConfig.specFilter);
 
     const totalChars = parsedSpec.filteredText.length + codeContext.combinedPromptContext.length;
     const estTokens = Math.ceil(totalChars / 4);
@@ -134,22 +134,22 @@ export async function runVerification(
       const requirementIds = [...new Set(parsedSpec.requirements.map((req) => req.id))];
       const unreferencedRequirementIds = findUnreferencedRequirementIds(
         requirementIds,
-        zoneConfig.rubrics
+        targetConfig.rubrics
       );
-      zoneResults.push({
-        zoneName,
-        specFiles: [zoneConfig.specPath],
+      targetResults.push({
+        targetName,
+        specFiles: [targetConfig.specPath],
         codeFiles: codeContext.files.map((f) => f.relativePath),
         passed: true,
         evaluations: [],
-        durationMs: Date.now() - zoneStart,
+        durationMs: Date.now() - targetStart,
         estimatedCostUsd: estCost,
         plan: {
           specSections: parsedSpec.sections.map((section) => section.title),
           requirementIds,
           specChars: parsedSpec.filteredText.length,
           codeChars: codeContext.combinedPromptContext.length,
-          rubrics: Object.keys(zoneConfig.rubrics),
+          rubrics: Object.keys(targetConfig.rubrics),
           unreferencedRequirementIds,
           warnings: planWarnings(codeContext, unreferencedRequirementIds),
         },
@@ -160,17 +160,17 @@ export async function runVerification(
     const rubricResults = await getEvaluator().evaluate({
       specContext: parsedSpec.filteredText,
       codeContext: codeContext.combinedPromptContext,
-      rubrics: zoneConfig.rubrics,
+      rubrics: targetConfig.rubrics,
     });
 
     const evaluations: AssertionEvaluation[] = [];
-    let zonePassed = true;
+    let targetPassed = true;
 
-    for (const [name, rubric] of Object.entries(zoneConfig.rubrics)) {
+    for (const [name, rubric] of Object.entries(targetConfig.rubrics)) {
       const typedRubric = rubric as AnyRubric;
       const result = rubricResults[name];
       if (!result) {
-        zonePassed = false;
+        targetPassed = false;
         evaluations.push({
           rubricName: name,
           rubric: typedRubric,
@@ -181,35 +181,35 @@ export async function runVerification(
         continue;
       }
 
-      const assertion = zoneConfig.assertions[name];
+      const assertion = targetConfig.assertions[name];
       const ev = assertRubric(name, typedRubric, result, assertion);
       if (!ev.passed) {
-        zonePassed = false;
+        targetPassed = false;
       }
       evaluations.push(ev);
     }
 
-    const zoneDuration = Date.now() - zoneStart;
+    const targetDuration = Date.now() - targetStart;
 
-    zoneResults.push({
-      zoneName,
-      specFiles: [zoneConfig.specPath],
+    targetResults.push({
+      targetName,
+      specFiles: [targetConfig.specPath],
       codeFiles: codeContext.files.map((f) => f.relativePath),
-      passed: zonePassed,
+      passed: targetPassed,
       evaluations,
-      durationMs: zoneDuration,
+      durationMs: targetDuration,
       estimatedCostUsd: estCost,
     });
   }
 
   const totalDuration = Date.now() - startTime;
-  const overallPassed = zoneResults.every((z) => z.passed);
-  const totalCost = zoneResults.reduce((acc, z) => acc + z.estimatedCostUsd, 0);
+  const overallPassed = targetResults.every((z) => z.passed);
+  const totalCost = targetResults.reduce((acc, z) => acc + z.estimatedCostUsd, 0);
 
   return {
     ...(options.dryRun ? { dryRun: true } : isMock && { mock: true }),
     passed: overallPassed,
-    zones: zoneResults,
+    targets: targetResults,
     totalDurationMs: totalDuration,
     totalEstimatedCostUsd: totalCost,
   };

@@ -34,7 +34,7 @@ Not for the first setup: use `jev-spec-init`.
 npx jev-spec check --format json > jev-spec-report.json; echo "exit=$?"
 ```
 
-Add `--zone <name>` to re-run a single zone while iterating. Delete the report file when you are done; do not commit it.
+Add `--target <name>` to re-run a single target while iterating (`--zone <name>` if `npx jev-spec --help` still lists that option). Delete the report file when you are done; do not commit it.
 
 | Exit code | Meaning | Go to |
 | :-- | :-- | :-- |
@@ -45,43 +45,43 @@ Add `--zone <name>` to re-run a single zone while iterating. Delete the report f
 Check two fields before reading verdicts:
 
 - `"mock": true` means the results are **placeholders** from keyword rules, not from the model. They say nothing about the code, so do not chase a mock verdict by editing rubrics, thresholds or code until it turns green. A hook or CI job must not gate on `--mock`: tell the owner to use `--dry-run` there instead (or, on jev-spec 0.1.x, which has no `--dry-run`, to accept exit codes 0 and 1 and fail only on 2). Still read the code against the specification (step 2): a real violation you find that way gets fixed, and reported as found by reading, not by jev-spec.
-- `"skipped": true` on a zone means it was **not evaluated** (`--staged` / `--diff` found no changed file in its `codePaths`). A skipped zone has not been verified.
+- `"skipped": true` on a target means it was **not evaluated** (`--staged` / `--diff` found no changed file in its `codePaths`). A skipped target has not been verified.
 
-Then list what the gate covers. Run these now and keep the output: the report in step 4 is built from it. Use the directory that holds the zones' `specPath` files, and adapt the ID pattern to the repository's scheme.
+Then list what the gate covers. Run these now and keep the output: the report in step 4 is built from it. Use the directory that holds the targets' `specPath` files, and adapt the ID pattern to the repository's scheme.
 
 ```sh
 ls docs/specs/                                                  # A: specification files
-grep -n "specPath" jev-spec.config.*                            # B: files a zone covers
+grep -n "specPath" jev-spec.config.*                            # B: files a target covers
 grep -ohE "[A-Z]+-[A-Z]+-[0-9]+" docs/specs/*.md | sort -u      # C: requirement IDs in the specifications
 grep -ohE "[A-Z]+-[A-Z]+-[0-9]+" jev-spec.config.* | sort -u    # D: requirement IDs named by a rubric
 ```
 
-A file in A but not in B has **no zone**. An ID in C but not in D has **no rubric**. Neither is verified by jev-spec, however the code looks.
+A file in A but not in B has **no target**. An ID in C but not in D has **no rubric**. Neither is verified by jev-spec, however the code looks.
 
 ### 2. For each failed rubric, find the cause
 
-Read the rubric's question, the requirement it names in the specification, and the code in the zone's `codePaths`. A failed check in `--staged` or `--diff` mode was judged on diff hunks only: re-run the zone without that flag before concluding anything.
+Read the rubric's question, the requirement it names in the specification, and the code in the target's `codePaths`. A failed check in `--staged` or `--diff` mode was judged on diff hunks only: re-run the target without that flag before concluding anything.
 
 | Cause | How to recognise it | What to do |
 | :-- | :-- | :-- |
 | **The code violates the requirement** | You can point at the missing or wrong behaviour | Fix the code. Add or update a test that pins the behaviour. This is the common case: the gate did its job. |
 | **The specification is outdated or wrong** | The code does what the team wants; the document lags | Propose the spec edit and let the owner decide. Do not edit a requirement just so that the check passes. |
 | **The rubric asks the wrong thing** | The question joins several requirements, mentions implementation details instead of the requirement, stacks negations, or needs counting | Rewrite the question (see `jev-spec-init`, step 4). Show before and after. Leave the threshold alone. |
-| **The model seems wrong** | The question is sound and you can quote the lines that satisfy the requirement, yet the probability stays low | Shrink the zone so less unrelated code is sent, check whether the requirement sits in a Markdown table (tables are not sent to the model in 0.1.x), re-run. If it still fails, escalate with the evidence. |
+| **The model seems wrong** | The question is sound and you can quote the lines that satisfy the requirement, yet the probability stays low | Shrink the target so less unrelated code is sent, check whether the requirement sits in a Markdown table (tables are not sent to the model in 0.1.x), re-run. If it still fails, escalate with the evidence. |
 
 **Changing the gate is the owner's decision, not part of a fix.** Lowering a threshold, deleting an assertion or a rubric, excluding the file from `codePaths`, narrowing `specFilter`, adding `--mock`, removing the CI step, committing with `--no-verify`: if one of these looks right, stop and present it as an option with its consequence. Time pressure does not change who decides.
 
 ### 3. Re-run
 
-Re-run the affected zone, then the full check without `--staged` / `--diff`. Run the project's tests.
+Re-run the affected target, then the full check without `--staged` / `--diff`. Run the project's tests.
 
 ### 4. Report
 
 The report separates what was verified from what was not, which is the part readers rely on. Work it out from the JSON of the **final** run before writing anything:
 
 1. `evaluator`: `mock` if the report has `"mock": true`, otherwise `live`.
-2. `verified`: **if the evaluator is `mock`, this list is empty.** A mock run verifies no requirement, whatever it printed. If it is `live`: the requirement IDs named in the questions of rubrics with `"passed": true`, in zones that were not skipped.
-3. `notVerified`, from the lists of step 1: every ID in C that is not in `verified` (say `no rubric covers it` when it is missing from D, otherwise `rubric exists, not evaluated live` or `rubric failed`), every file in A that is missing from B (`no zone covers this file`), and every skipped zone.
+2. `verified`: **if the evaluator is `mock`, this list is empty.** A mock run verifies no requirement, whatever it printed. If it is `live`: the requirement IDs named in the questions of rubrics with `"passed": true`, in targets that were not skipped.
+3. `notVerified`, from the lists of step 1: every ID in C that is not in `verified` (say `no rubric covers it` when it is missing from D, otherwise `rubric exists, not evaluated live` or `rubric failed`), every file in A that is missing from B (`no target covers this file`), and every skipped target.
 
 Then fill in this one template. Keep every line, in this order. The two `IDs` lines are the raw output of commands C and D from step 1, pasted, so that the rows below them can be checked:
 
@@ -94,7 +94,7 @@ Verified by jev-spec in this run: nothing, because mock verdicts are placeholder
 Not verified by jev-spec:
   REQ-AUTH-01, REQ-AUTH-02                  rubric exists, not evaluated live
   REQ-AUTH-03, REQ-BILL-01, REQ-BILL-02     no rubric covers it
-  docs/specs/billing.md                     no zone covers this file
+  docs/specs/billing.md                     no target covers this file
 Changed
   src/auth/session.ts   REQ-AUTH-02: restored the revocation check            found by: reading the code
   src/auth/session.ts   removed the undocumented x-debug-bypass branch        found by: reading the code
@@ -116,11 +116,11 @@ The report is the **end of your reply**: nothing follows the `Merge readiness` l
 
 - **`API key is required` (exit 2) in a hook**: the shell has no `TYPESAFE_AI_API_KEY`. The hook should skip without a key rather than fail; see the hook template in `jev-spec-init`.
 - **`Invalid jev-spec configuration` (exit 2)**: every problem is listed with its config path, for example an assertion key that matches no rubric or `maxProbability: 15`. Fix the config; these were silently ignored before 0.1.1.
-- **A rubric flips between runs near its threshold**: the probability sits close to the threshold. Improve the question or shrink the zone. Moving the threshold is a gate change.
-- **The failing change is documentation-only**: check that the zone's `codePaths` do not match documentation or generated files.
+- **A rubric flips between runs near its threshold**: the probability sits close to the threshold. Improve the question or shrink the target. Moving the threshold is a gate change.
+- **The failing change is documentation-only**: check that the target's `codePaths` do not match documentation or generated files.
 
 ## See also
 
 - Documentation: <https://github.com/nozomi-koborinai/jev-spec#readme>
 - What the Jev model is known to be bad at (multi-step questions, counting, negation, long unrelated context): <https://docs.typesafe.ai/model-jaggedness/jev-1.13>
-- Sister skill: `jev-spec-init`, for setup, new zones and rubric writing
+- Sister skill: `jev-spec-init`, for setup, new targets and rubric writing

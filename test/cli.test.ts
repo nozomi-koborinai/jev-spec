@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 const pkgRoot = path.resolve(__dirname, '../..');
 
 const LIVE_CONFIG_SOURCE = `export default {
-  zones: {
+  targets: {
     auth: {
       specPath: 'test/fixtures/specs/auth-requirements.md',
       codePaths: ['test/fixtures/src/auth.ts'],
@@ -113,7 +113,7 @@ describe('CLI check command', () => {
   it('rejects an --output path outside the project root before spending an evaluation', async () => {
     const tempDir = await makeProjectTempDir();
     const configPath = path.join(tempDir, 'jev-spec.config.mjs');
-    // The spec file does not exist: if verification ran first, the error would be ENOENT.
+    // The spec file does not exist: if the check ran first, the error would be ENOENT.
     await fs.writeFile(
       configPath,
       LIVE_CONFIG_SOURCE.replace(

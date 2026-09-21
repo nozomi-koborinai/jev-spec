@@ -61,8 +61,8 @@ export interface SpecFilter {
   readonly tags?: readonly string[];
 }
 
-// Zone Definition
-export interface ZoneConfig<R extends Record<string, AnyRubric> = Record<string, AnyRubric>> {
+// Target Definition
+export interface TargetConfig<R extends Record<string, AnyRubric> = Record<string, AnyRubric>> {
   readonly description?: string;
   readonly specPath: string;
   readonly codePaths: readonly string[];
@@ -72,10 +72,10 @@ export interface ZoneConfig<R extends Record<string, AnyRubric> = Record<string,
 }
 
 /**
- * A zone as the engine sees it: rubric names are not tracked at the type level, so every
- * `ZoneConfig<R>` fits, as do hand-written configurations that never went through defineConfig.
+ * A target as the engine sees it: rubric names are not tracked at the type level, so every
+ * `TargetConfig<R>` fits, as do hand-written configurations that never went through defineConfig.
  */
-export interface AnyZoneConfig extends Omit<ZoneConfig, 'rubrics' | 'assertions'> {
+export interface AnyTargetConfig extends Omit<TargetConfig, 'rubrics' | 'assertions'> {
   readonly rubrics: Readonly<Record<string, AnyRubric>>;
   readonly assertions: Readonly<Record<string, AnyAssertion | undefined>>;
 }
@@ -92,7 +92,7 @@ export interface JevClientConfig {
 // Top-level Configuration
 export interface JevSpecConfig {
   readonly client?: JevClientConfig;
-  readonly zones: Record<string, AnyZoneConfig>;
+  readonly targets: Record<string, AnyTargetConfig>;
 }
 
 // Evaluation Results
@@ -127,8 +127,8 @@ export interface AssertionEvaluation {
   readonly reason?: string;
 }
 
-/** What a dry run would send for a zone. Nothing in it comes from the Jev API. */
-export interface ZonePlan {
+/** What a dry run would send for a target. Nothing in it comes from the Jev API. */
+export interface TargetPlan {
   /** Titles of the specification sections that would be sent. */
   readonly specSections: readonly string[];
   /** Requirement IDs found in those sections. */
@@ -137,25 +137,25 @@ export interface ZonePlan {
   readonly codeChars: number;
   /** Names of the rubrics that would be asked. */
   readonly rubrics: readonly string[];
-  /** Requirement IDs of the specification that no rubric mentions: jev-spec does not verify them. */
+  /** Requirement IDs of the specification that no rubric mentions: jev-spec does not check them. */
   readonly unreferencedRequirementIds: readonly string[];
-  /** Problems that do not stop the run but make the zone less meaningful. */
+  /** Problems that do not stop the run but make the target less meaningful. */
   readonly warnings: readonly string[];
 }
 
-export interface ZoneCheckResult {
-  readonly zoneName: string;
+export interface TargetCheckResult {
+  readonly targetName: string;
   readonly specFiles: readonly string[];
   readonly codeFiles: readonly string[];
   readonly passed: boolean;
   readonly evaluations: readonly AssertionEvaluation[];
   readonly durationMs: number;
   readonly estimatedCostUsd: number;
-  /** True when the zone was not evaluated (e.g. no changed file matched its codePaths in diff mode). */
+  /** True when the target was not evaluated (e.g. no changed file matched its codePaths in diff mode). */
   readonly skipped?: boolean;
   readonly skipReason?: string;
   /** Present in a dry run instead of evaluations. */
-  readonly plan?: ZonePlan;
+  readonly plan?: TargetPlan;
 }
 
 export interface OverallCheckResult {
@@ -164,7 +164,7 @@ export interface OverallCheckResult {
   /** True when nothing was evaluated: configuration, spec parsing and file matching only. */
   readonly dryRun?: boolean;
   readonly passed: boolean;
-  readonly zones: readonly ZoneCheckResult[];
+  readonly targets: readonly TargetCheckResult[];
   readonly totalDurationMs: number;
   readonly totalEstimatedCostUsd: number;
 }

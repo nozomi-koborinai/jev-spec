@@ -4,7 +4,7 @@ export default defineConfig({
   client: {
     mock: true,
   },
-  zones: {
+  targets: {
     auth: {
       description: 'Authentication session token verification',
       specPath: 'test/fixtures/specs/auth-requirements.md',

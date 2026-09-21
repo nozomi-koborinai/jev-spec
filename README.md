@@ -15,9 +15,9 @@
 ```text
 $ npx jev-spec check
 
-=== jev-spec Verification Report ===
+=== jev-spec Check Report ===
 
-Zone: auth [✖ FAILED]
+Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
     ✔ verifiesSessionTokens: probability: 0.97
@@ -25,7 +25,7 @@ Zone: auth [✖ FAILED]
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
     ✔ introducesUnspecifiedBehavior: probability: 0.03
 
-Overall: ✖ VERIFICATION FAILED
+Overall: ✖ CHECKS FAILED
 
 $ echo $?
 1
@@ -52,7 +52,7 @@ You can put these questions to a general-purpose LLM in a prompt. Then you parse
 1. **You write questions, not prompts.** Each requirement gets one yes/no question (`noul`). Categorical (`choice`) and ordinal (`score`) rubrics are available when a decision depends on them. They live in a typed `jev-spec.config.ts`.
 2. **Jev answers with numbers.** Jev is a [System One model](https://docs.typesafe.ai/concepts/system-one): it does not generate text. It reads the specification and the code once and returns a probability for every question in the same request. TypeSafe trains it for [calibrated probabilities](https://docs.typesafe.ai/introduction/machine-learning-primer), which is what gives a threshold its meaning.
 3. **Thresholds decide.** `minProbability: 0.85`, `maxProbability: 0.15`, `allowedChoices`, `minScore`: plain comparisons and standard exit codes (`0` passed, `1` failed, `2` broken setup).
-4. **It is cheap enough for every commit.** Jev is priced on input tokens only, [$0.042 per million](https://docs.typesafe.ai/models), and output is free, so checking a zone costs a fraction of a cent. Every report prints the estimate. TypeSafe publishes its own [speed and cost comparison](https://typesafe.ai) with general-purpose LLMs.
+4. **It is cheap enough for every commit.** Jev is priced on input tokens only, [$0.042 per million](https://docs.typesafe.ai/models), and output is free, so checking a target costs a fraction of a cent. Every report prints the estimate. TypeSafe publishes its own [speed and cost comparison](https://typesafe.ai) with general-purpose LLMs.
 
 | | Prompting a general-purpose LLM | jev-spec with Jev |
 | :--- | :--- | :--- |
@@ -64,7 +64,7 @@ You can put these questions to a general-purpose LLM in a prompt. Then you parse
 ### Know the limits
 
 - **A probability is not a proof.** jev-spec tells you that code has probably drifted from a requirement. It complements tests and review and replaces neither. Calibrate the thresholds on your own code before you trust them.
-- **Keep zones small.** A zone is sent in one request. Make it one domain, not the whole `src/` tree: Jev gets less accurate as unrelated content grows (see its [known limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13)).
+- **Keep targets small.** A target is sent in one request. Make it one domain, not the whole `src/` tree: Jev gets less accurate as unrelated content grows (see its [known limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13)).
 - **Ask narrow questions.** One requirement per question. Multi-part questions, counting and stacked negations are answered less reliably.
 - **Markdown tables in a specification are not sent to the model yet.** Restate the rows in the question, or write the requirement as a list.
 - **`--staged` and `--diff` send only the changed hunks.** That is less context than the full files: good for fast feedback, while a full check sees everything.
@@ -80,7 +80,7 @@ Implementation (Code / Git Diff) ─┘   (Root Jail + Boundary Isolation)      
 
 1. **Context Extraction**: Parses markdown specifications using `mdast` (filtering by heading, tag, or requirement ID) and extracts source files or staged git diff hunks.
 2. **Security Isolation**: Enforces workspace root jails, symlink escape checks, git revision argument sanitization, and anti-prompt-injection boundary tagging.
-3. **One Request per Zone**: Sends the specification, the code and every rubric of a zone to Jev in a single request.
+3. **One Request per Target**: Sends the specification, the code and every rubric of a target to Jev in a single request.
 4. **Assertion Evaluation**: Compares the returned probabilities and scores with your thresholds and exits with `0`, `1` or `2`.
 
 ---
@@ -115,7 +115,9 @@ pnpm add -D jev-spec
 
 *Or run directly without local installation via `bunx jev-spec` or `npx jev-spec`.*
 
-### 2. Configure Zones & Rubrics
+### 2. Configure Targets & Rubrics
+
+A **target** pairs one part of your spec with the code that implements it. It has its own rubrics and assertions and is checked as a unit.
 
 Create `jev-spec.config.ts` in your repository root:
 
@@ -123,7 +125,7 @@ Create `jev-spec.config.ts` in your repository root:
 import { defineConfig, noul, choice, score } from 'jev-spec';
 
 export default defineConfig({
-  zones: {
+  targets: {
     auth: {
       description: 'Authentication session token verification',
       specPath: 'docs/specs/auth-requirements.md',
@@ -165,9 +167,9 @@ export default defineConfig({
 
 Ask one narrow question per requirement and name its ID. A question that joins several requirements cannot tell you which one failed, and the model answers it less reliably.
 
-### 3. Run Semantic Verification
+### 3. Run the Check
 
-Create an API key in the [TypeSafe console](https://console.typesafe.ai/keys), set it, and run the verification:
+Create an API key in the [TypeSafe console](https://console.typesafe.ai/keys), set it, and run the check:
 
 ```bash
 export TYPESAFE_AI_API_KEY="your-typesafe-api-key"
@@ -262,10 +264,10 @@ assertions: {
   - `maxScore?: number`: Maximum fractional score index.
   - `minConfidence?: number`: Minimum confidence metric (`[0, 1]`).
 
-### Zone Configuration Interface
+### Target Configuration Interface
 
 ```typescript
-export interface ZoneConfig {
+export interface TargetConfig {
   /** Optional human-readable description */
   readonly description?: string;
 
@@ -294,9 +296,9 @@ export interface ZoneConfig {
 
 ### CLI Usage Reference
 
-#### Check All Zones
+#### Check All Targets
 
-Run semantic verification across all zones declared in your configuration:
+Check every target declared in your configuration:
 
 ```bash
 # Instant check via Bun
@@ -306,27 +308,27 @@ bunx jev-spec check
 npx jev-spec check
 ```
 
-#### Targeted Zone Verification
+#### Check a Single Target
 
-Execute verification against a single zone:
+Check one target by name:
 
 ```bash
-bunx jev-spec check --zone auth
+bunx jev-spec check --target auth
 ```
 
-#### Git Diff Verification (Pre-commit Hooks & CI)
+#### Diff Runs (Pre-commit Hooks & CI)
 
-Verify semantic compliance against changed lines instead of entire source files:
+Check the changed lines instead of entire source files:
 
 ```bash
-# Verify against staged git changes (ideal for pre-commit git hooks)
+# Check staged git changes (ideal for pre-commit git hooks)
 bunx jev-spec check --staged
 
-# Verify git diff against a branch range (ideal for pull request CI)
+# Check the diff of a branch range (ideal for pull request CI)
 bunx jev-spec check --diff origin/main...HEAD
 ```
 
-Zones whose `codePaths` match none of the changed files are reported as `SKIPPED`: they are not sent to Jev and do not affect the exit code, so a pre-commit hook never blocks a commit that does not touch a zone.
+Targets whose `codePaths` match none of the changed files are reported as `SKIPPED`: they are not sent to Jev and do not affect the exit code, so a pre-commit hook never blocks a commit that does not touch a target.
 
 #### Dry Run, Mock Mode, Help & Version
 
@@ -342,7 +344,7 @@ npx jev-spec --help
 npx jev-spec --version
 ```
 
-A dry run prints, for every zone, the specification sections and requirement IDs it found, the code files it matched, the rubrics it would ask and the estimated cost. It also warns about requirement IDs that no rubric mentions, `codePaths` that match no file and a code context that exceeds the size budget. It exits with `0` when the setup is valid and `2` when it is not; it never exits with `1`, because nothing is verified.
+A dry run prints, for every target, the specification sections and requirement IDs it found, the code files it matched, the rubrics it would ask and the estimated cost. It also warns about requirement IDs that no rubric mentions, `codePaths` that match no file and a code context that exceeds the size budget. It exits with `0` when the setup is valid and `2` when it is not; it never exits with `1`, because nothing is checked.
 
 Unknown commands, unknown options, missing option values and unsupported `--format` values are rejected with exit code `2`.
 
@@ -367,8 +369,8 @@ npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
 #### CLI Exit Codes
 
-- `0`: All zones and assertions passed.
-- `1`: Verification failed (one or more assertions breached).
+- `0`: All targets and assertions passed.
+- `1`: A check failed (one or more assertions violated).
 - `2`: Configuration or runtime error (missing file, invalid argument, missing API key).
 
 ---
@@ -405,8 +407,8 @@ Because Jev evaluates decisions in **sub-second time (70ms – 400ms)**, runtime
 1. **Untrusted Code Risk**: In public repositories, pull requests can modify `jev-spec.config.ts`, specifications, or code. Executing untrusted code with access to sensitive credentials introduces secret exfiltration vectors.
 2. **Recommended Defense-in-Depth Patterns**:
    - **Dry Run for Fork PRs**: Run PR checks as a dry run (`jev-spec check --dry-run`), validating configuration structure, spec parsing, and glob matching without exposing API credentials.
-   - **Environment Protection**: For live verification on external PRs, use GitHub Actions Environment Approvals so maintainers review the diff before secrets are unlocked.
-   - **Main Branch Verification**: Run live semantic verification on `push` to `main` and trusted internal release branches.
+   - **Environment Protection**: For live checks on external PRs, use GitHub Actions Environment Approvals so maintainers review the diff before secrets are unlocked.
+   - **Main Branch Checks**: Run live checks on `push` to `main` and trusted internal release branches.
 
 ### Recommended GitHub Actions Workflow
 
@@ -423,7 +425,7 @@ permissions:
   contents: read
 
 jobs:
-  verify-specs:
+  check-specs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -440,7 +442,7 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Run jev-spec (Internal Pull Request / Changed Zones)
+      - name: Run jev-spec (Internal Pull Request / Changed Targets)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
@@ -449,7 +451,7 @@ jobs:
             --diff origin/main...HEAD \
             --format markdown >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run jev-spec (Push to Main / Full Verification)
+      - name: Run jev-spec (Push to Main / Full Run)
         if: github.event_name == 'push'
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
@@ -460,7 +462,7 @@ jobs:
         run: npx jev-spec check --dry-run
 ```
 
-The push step runs a full verification on purpose: on `main`, `origin/main...HEAD` is an empty range, so every zone would be skipped.
+The push step is a full run on purpose: on `main`, `origin/main...HEAD` is an empty range, so every target would be skipped.
 
 ### Built-in Security Controls
 

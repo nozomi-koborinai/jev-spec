@@ -30,8 +30,8 @@ describe('jev-spec DSL', () => {
 
   it('validates defineConfig type inference', () => {
     const cfg = defineConfig({
-      zones: {
-        testZone: {
+      targets: {
+        testTarget: {
           specPath: 'spec.md',
           codePaths: ['src/**/*.ts'],
           rubrics: {
@@ -43,14 +43,14 @@ describe('jev-spec DSL', () => {
         },
       },
     });
-    expect(cfg.zones.testZone).toBeDefined();
+    expect(cfg.targets.testTarget).toBeDefined();
   });
 
-  it('type-checks assertions against the rubrics of their own zone', () => {
+  it('type-checks assertions against the rubrics of their own target', () => {
     // Compile-time test: every @ts-expect-error below must correspond to a real type error,
     // otherwise `tsc` fails the build with "Unused '@ts-expect-error' directive".
     const cfg = defineConfig({
-      zones: {
+      targets: {
         auth: {
           specPath: 'spec.md',
           codePaths: ['src/**/*.ts'],
@@ -63,7 +63,7 @@ describe('jev-spec DSL', () => {
             satisfies: { minProbability: 0.85 },
             posture: { allowedChoices: ['secure'], minConfidence: 0.75 },
             completeness: { minScore: 1.5 },
-            // @ts-expect-error assertion key does not match any rubric in this zone
+            // @ts-expect-error assertion key does not match any rubric in this target
             satisfie: { minProbability: 0.85 },
           },
         },
@@ -78,7 +78,7 @@ describe('jev-spec DSL', () => {
             correct: noul('Are invoices computed correctly?'),
           },
           assertions: {
-            // @ts-expect-error 'secure' belongs to the auth zone, not to this rubric
+            // @ts-expect-error 'secure' belongs to the auth target, not to this rubric
             posture: { allowedChoices: ['secure'] },
             // @ts-expect-error allowedChoices is not a valid option for a noul rubric
             correct: { allowedChoices: ['halfUp'] },
@@ -87,6 +87,6 @@ describe('jev-spec DSL', () => {
       },
     });
 
-    expect(Object.keys(cfg.zones)).toEqual(['auth', 'billing']);
+    expect(Object.keys(cfg.targets)).toEqual(['auth', 'billing']);
   });
 });

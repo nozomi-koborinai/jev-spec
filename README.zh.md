@@ -15,9 +15,9 @@
 ```text
 $ npx jev-spec check
 
-=== jev-spec Verification Report ===
+=== jev-spec Check Report ===
 
-Zone: auth [✖ FAILED]
+Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
     ✔ verifiesSessionTokens: probability: 0.97
@@ -25,7 +25,7 @@ Zone: auth [✖ FAILED]
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
     ✔ introducesUnspecifiedBehavior: probability: 0.03
 
-Overall: ✖ VERIFICATION FAILED
+Overall: ✖ CHECKS FAILED
 
 $ echo $?
 1
@@ -52,7 +52,7 @@ Linter 和 schema 校验可以告诉你 `REQ-AUTH-02` 存在、格式正确，�
 1. **你写的是问题，而不是提示词。** 每条需求对应一个是/否问题（`noul`）。当某个判断需要时，还可以使用分类（`choice`）和分级（`score`）Rubric。它们都写在带类型的 `jev-spec.config.ts` 中。
 2. **Jev 用数字作答。** Jev 是一个 [System One 模型](https://docs.typesafe.ai/concepts/system-one)：它不生成文本。它只读取一次规范和代码，并在同一个请求中为每个问题返回一个概率。TypeSafe 以[校准概率](https://docs.typesafe.ai/introduction/machine-learning-primer)为目标训练它，阈值因此才有意义。
 3. **由阈值做决定。** `minProbability: 0.85`、`maxProbability: 0.15`、`allowedChoices`、`minScore`：都是简单的数值比较，并使用标准退出码（`0` 通过，`1` 失败，`2` 配置有误）。
-4. **便宜到可以每次提交都运行。** Jev 只按输入 token 计费，[每百万 token $0.042](https://docs.typesafe.ai/models)，输出免费，因此检查一个 Zone 的成本不到一美分，每份报告都会给出估算值。TypeSafe 自己公布了与通用大模型的[速度与成本对比](https://typesafe.ai)。
+4. **便宜到可以每次提交都运行。** Jev 只按输入 token 计费，[每百万 token $0.042](https://docs.typesafe.ai/models)，输出免费，因此检查一个目标的成本不到一美分，每份报告都会给出估算值。TypeSafe 自己公布了与通用大模型的[速度与成本对比](https://typesafe.ai)。
 
 | | 向通用大模型发提示词 | jev-spec 与 Jev |
 | :--- | :--- | :--- |
@@ -64,7 +64,7 @@ Linter 和 schema 校验可以告诉你 `REQ-AUTH-02` 存在、格式正确，�
 ### 需要了解的局限
 
 - **概率不是证明。** jev-spec 告诉你的是：代码很可能已经偏离了某条需求。它是测试与评审的补充，不能替代其中任何一个。在信任阈值之前，请先用你自己的代码进行校准。
-- **让 Zone 保持小而专。** 一个 Zone 在一次请求中发送。请让它只覆盖一个领域，而不是整个 `src/` 目录：无关内容越多，Jev 的准确度越低（参见其[已知局限](https://docs.typesafe.ai/model-jaggedness/jev-1.13)）。
+- **让目标保持小而专。** 一个目标在一次请求中发送。请让它只覆盖一个领域，而不是整个 `src/` 目录：无关内容越多，Jev 的准确度越低（参见其[已知局限](https://docs.typesafe.ai/model-jaggedness/jev-1.13)）。
 - **问题要窄。** 一个问题只问一条需求。包含多个条件、需要计数或多重否定的问题，回答的可靠性会下降。
 - **规范中的 Markdown 表格目前不会发送给模型。** 请在问题中复述表格行的内容，或者把需求写成列表。
 - **`--staged` 与 `--diff` 只发送发生变更的代码块（hunk）。** 上下文比完整文件少：适合快速反馈，而完整检查能看到全部内容。
@@ -80,7 +80,7 @@ Linter 和 schema 校验可以告诉你 `REQ-AUTH-02` 存在、格式正确，�
 
 1. **上下文提取**：使用 `mdast` 解析 Markdown 规范文档（按标题、标签或需求 ID 进行精准过滤），并提取目标源文件或 Git 暂存区 Diff 代码块。
 2. **安全隔离**：强制执行工作区 Root Jail（防路径穿越）、符号链接越界检查、Git Revision 参数安全校验，以及防 Prompt 注入的边界标签隔离。
-3. **每个 Zone 一次请求**：将该 Zone 的规范、代码以及全部 Rubric 在一次请求中发送给 Jev。
+3. **每个目标一次请求**：将该目标的规范、代码以及全部 Rubric 在一次请求中发送给 Jev。
 4. **断言判定**：将返回的概率与分值同你设定的阈值比较，并以退出码 `0`、`1` 或 `2` 结束。
 
 ---
@@ -115,7 +115,9 @@ pnpm add -D jev-spec
 
 *也可以无需本地安装，直接通过 `bunx jev-spec` 或 `npx jev-spec` 运行。*
 
-### 2. 配置验证区域与评估准则
+### 2. 配置目标与 Rubric
+
+**目标（Target）**是规范文档的一部分与实现它的代码的组合。每个目标都有自己的 Rubric 和断言，并作为一个整体接受检查。
 
 在仓库根目录下创建 `jev-spec.config.ts`：
 
@@ -123,7 +125,7 @@ pnpm add -D jev-spec
 import { defineConfig, noul, choice, score } from 'jev-spec';
 
 export default defineConfig({
-  zones: {
+  targets: {
     auth: {
       description: 'Authentication session token verification',
       specPath: 'docs/specs/auth-requirements.md',
@@ -165,9 +167,9 @@ export default defineConfig({
 
 请为每条需求单独编写一个聚焦的问题，并写明需求 ID。把多条需求合并进一个问题，既无法得知究竟是哪一条未通过，模型的回答也会更不可靠。
 
-### 3. 执行语义验证
+### 3. 执行检查
 
-在 [TypeSafe 控制台](https://console.typesafe.ai/keys)创建 API Key，完成配置后执行验证命令：
+在 [TypeSafe 控制台](https://console.typesafe.ai/keys)创建 API Key，完成配置后执行检查：
 
 ```bash
 export TYPESAFE_AI_API_KEY="your-typesafe-api-key"
@@ -233,7 +235,7 @@ assertions: {
 
 - **断言配置项**：
   - `allowedChoices?: readonly T[]`：允许选中的选项 Key 数组。
-  - `blockedChoices?: readonly T[]`：禁止选中的选项 Key 数组（若被选中则验证失败）。
+  - `blockedChoices?: readonly T[]`：禁止选中的选项 Key 数组（若被选中则检查失败）。
   - `minConfidence?: number`：选中该选项所需的最低置信度阈值（`[0, 1]`）。
 
 #### score(description, levels): ScoreRubric
@@ -262,11 +264,11 @@ assertions: {
   - `maxScore?: number`：最高允许的小数分值索引。
   - `minConfidence?: number`：最低置信度指标（`[0, 1]`）。
 
-### 区域配置接口 (ZoneConfig)
+### 目标配置接口 (TargetConfig)
 
 ```typescript
-export interface ZoneConfig {
-  /** 区域的可读描述信息（可选） */
+export interface TargetConfig {
+  /** 目标的可读描述信息（可选） */
   readonly description?: string;
 
   /** 工作区内 Markdown / MDX 规范文档的相对路径 */
@@ -294,39 +296,39 @@ export interface ZoneConfig {
 
 ### CLI 命令参考
 
-#### 检查所有区域
+#### 检查所有目标
 
-对配置文件中声明的所有区域执行语义验证：
+检查配置文件中声明的所有目标：
 
 ```bash
-# 使用 Bun 快速校验
+# 使用 Bun 快速检查
 bunx jev-spec check
 
-# 使用 Node.js 校验
+# 使用 Node.js 检查
 npx jev-spec check
 ```
 
-#### 指定特定区域验证
+#### 只检查一个目标
 
-仅对单一指定区域执行校验：
+按名称只检查一个目标：
 
 ```bash
-bunx jev-spec check --zone auth
+bunx jev-spec check --target auth
 ```
 
-#### 基于 Git Diff 校验（Pre-commit 钩子与 CI）
+#### 只检查改动（Pre-commit 钩子与 CI）
 
-仅对改动的代码行而非全部源文件进行针对性语义验证：
+只检查改动的代码行，而非全部源文件：
 
 ```bash
-# 校验 Git 暂存区中的改动（非常适合 pre-commit 钩子）
+# 检查 Git 暂存区中的改动（非常适合 pre-commit 钩子）
 bunx jev-spec check --staged
 
-# 针对分支区间的 Diff 进行校验（非常适合 PR 门禁 CI）
+# 检查分支区间的 Diff（非常适合 PR 门禁 CI）
 bunx jev-spec check --diff origin/main...HEAD
 ```
 
-如果改动的文件与某个 Zone 的 `codePaths` 完全不匹配，该 Zone 会被报告为 `SKIPPED`：不会发送给 Jev，也不影响退出码，因此 pre-commit 钩子不会拦截未涉及该 Zone 的提交。
+如果改动的文件与某个目标的 `codePaths` 完全不匹配，该目标会被报告为 `SKIPPED`：不会发送给 Jev，也不影响退出码，因此 pre-commit 钩子不会拦截未涉及该目标的提交。
 
 #### Dry Run、Mock 模式、帮助与版本
 
@@ -342,7 +344,7 @@ npx jev-spec --help
 npx jev-spec --version
 ```
 
-Dry Run 会针对每个 Zone 输出找到的规范章节与需求 ID、匹配到的代码文件、将要提出的 Rubric 以及预估成本。对于没有任何 Rubric 提及的需求 ID、未匹配到任何文件的 `codePaths`，以及超出大小预算的代码上下文，它会给出警告。配置有效时退出码为 `0`，存在问题时为 `2`；由于不做任何验证，它不会以 `1` 退出。
+Dry Run 会针对每个目标输出找到的规范章节与需求 ID、匹配到的代码文件、将要提出的 Rubric 以及预估成本。对于没有任何 Rubric 提及的需求 ID、未匹配到任何文件的 `codePaths`，以及超出大小预算的代码上下文，它会给出警告。配置有效时退出码为 `0`，存在问题时为 `2`；由于不做任何检查，它不会以 `1` 退出。
 
 未知命令、未知选项、缺少取值的选项以及不支持的 `--format` 取值都会被拒绝，并返回退出码 `2`。
 
@@ -367,8 +369,8 @@ npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
 #### CLI 退出状态码
 
-- `0`：所有区域与断言全部通过。
-- `1`：验证失败（存在一项或多项断言未达标）。
+- `0`：所有目标与断言全部通过。
+- `1`：检查失败（存在一项或多项断言未达标）。
 - `2`：配置或运行时错误（文件丢失、参数无效、未提供 API Key 等）。
 
 ---
@@ -405,8 +407,8 @@ npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 1. **不可信代码风险**：在公开开源仓库中，外部 PR 可能篡改 `jev-spec.config.ts`、规范或执行脚本。在持有高权限 API 密钥的环境下执行不可信代码存在密钥外泄风险。
 2. **推荐的纵深防御实践**：
    - **针对 Fork PR 运行 Dry Run**：在外部 PR 检查中使用 Dry Run（`jev-spec check --dry-run`），校验配置有效性、规范解析完整性及路径匹配，而不暴露任何 API 密钥。
-   - **Environment 审批保护**：若需对外部 PR 执行在线验证，建议使用 GitHub Actions 的 Environment Approvals 功能，由维护者审查 Diff 后再授权提供密钥。
-   - **针对 Main 主分支在线验证**：在 `push` 至 `main` 分支及受信内部发布分支上运行完整的真实语义校验。
+   - **Environment 审批保护**：若需对外部 PR 执行在线检查，建议使用 GitHub Actions 的 Environment Approvals 功能，由维护者审查 Diff 后再授权提供密钥。
+   - **针对 Main 主分支的在线检查**：在 `push` 至 `main` 分支及受信内部发布分支上运行完整的在线检查。
 
 ### 推荐的 GitHub Actions 工作流配置
 
@@ -423,7 +425,7 @@ permissions:
   contents: read
 
 jobs:
-  verify-specs:
+  check-specs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -440,7 +442,7 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Run jev-spec (Internal Pull Request / Changed Zones)
+      - name: Run jev-spec (Internal Pull Request / Changed Targets)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
@@ -449,7 +451,7 @@ jobs:
             --diff origin/main...HEAD \
             --format markdown >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run jev-spec (Push to Main / Full Verification)
+      - name: Run jev-spec (Push to Main / Full Run)
         if: github.event_name == 'push'
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
@@ -460,7 +462,7 @@ jobs:
         run: npx jev-spec check --dry-run
 ```
 
-push 步骤有意执行完整校验：在 `main` 分支上 `origin/main...HEAD` 是空区间，所有 Zone 都会被跳过。
+push 步骤有意执行完整检查：在 `main` 分支上 `origin/main...HEAD` 是空区间，所有目标都会被跳过。
 
 ### 内置纵深安全防御机制
 

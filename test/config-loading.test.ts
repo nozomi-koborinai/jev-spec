@@ -9,7 +9,7 @@ const CONFIG_SOURCE = `import { defineConfig, noul } from 'jev-spec';
 
 export default defineConfig({
   client: { mock: true },
-  zones: {
+  targets: {
     core: {
       specPath: 'docs/spec.md',
       codePaths: ['src/**/*.ts'],
@@ -43,7 +43,7 @@ describe('loading a configuration that imports from "jev-spec"', () => {
 
     const config = await loadConfig(undefined, dir);
 
-    expect(config.zones.core.rubrics.exportsA).toEqual({
+    expect(config.targets.core.rubrics.exportsA).toEqual({
       type: 'noul',
       question: 'Does the module export the constant a?',
     });
@@ -54,6 +54,6 @@ describe('loading a configuration that imports from "jev-spec"', () => {
 
     const config = await loadConfig(undefined, dir);
 
-    expect(config.zones.core.codePaths).toEqual(['src/**/*.ts']);
+    expect(config.targets.core.codePaths).toEqual(['src/**/*.ts']);
   });
 });
