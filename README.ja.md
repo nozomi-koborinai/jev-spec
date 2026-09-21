@@ -33,6 +33,8 @@ $ echo $?
 
 *レポートの例です。レイアウトは CLI の実際の出力どおりで（所要時間とコストの行は省略）、確率の値は例示です。*
 
+`jev-spec` は独立したオープンソースプロジェクトです。TypeSafe AI とは提携しておらず、公認も受けていません。`jev-spec` の不具合は、TypeSafe ではなく[このリポジトリ](https://github.com/nozomi-koborinai/jev-spec/issues)にご報告ください。
+
 ---
 
 ## なぜ jev-spec なのか

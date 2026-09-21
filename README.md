@@ -33,6 +33,8 @@ $ echo $?
 
 *Example report. The layout is what the CLI prints (timing and cost lines omitted); the probabilities are illustrative.*
 
+`jev-spec` is an independent open-source project. It is not affiliated with or endorsed by TypeSafe AI. Please report problems with `jev-spec` in [this repository](https://github.com/nozomi-koborinai/jev-spec/issues), not to TypeSafe.
+
 ---
 
 ## Why jev-spec?

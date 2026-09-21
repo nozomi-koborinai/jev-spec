@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - The README introduction was rewritten in all four languages. It now opens with what the tool does and an example report, explains the approach in four steps, and adds a "Know the limits" section. Figures that had no source (latency ranges, per-file LLM costs, "100x cheaper") were removed; the price, the model's properties and its limitations link to the TypeSafe documentation instead. The Quickstart links to the page where an API key is created.
+- The README states that jev-spec is an independent open-source project, not affiliated with or endorsed by TypeSafe AI, and asks for problems to be reported in this repository.
 
 ### Internal
 
