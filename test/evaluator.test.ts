@@ -1,4 +1,4 @@
-import { after, before, describe, test as it } from 'node:test';
+import { after, describe, test as it } from 'node:test';
 import { choice, noul, score } from '../src/dsl.js';
 import {
   createJevEvaluator,

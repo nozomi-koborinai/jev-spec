@@ -1,5 +1,4 @@
 import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import { extractGitDiff, formatDiffContext } from './git-diff.js';
 import { matchesGlobPatterns, resolveGlobPatterns } from './glob-matcher.js';
 import {
@@ -8,7 +7,7 @@ import {
   MAX_FILE_SIZE_BYTES,
   PathSecurityError,
 } from './path-security.js';
-import type { CodeExtractionOptions } from './types.js';
+import type { CodeExtractionOptions, GitDiffOptions } from './types.js';
 
 export interface CodeFileContext {
   readonly relativePath: string;
@@ -60,8 +59,9 @@ export async function extractCodeContext(
   const cwd = options.cwd ?? process.cwd();
   const maxChars = options.maxTotalChars ?? DEFAULT_MAX_CHARS;
 
-  if (options.gitDiff?.staged || options.gitDiff?.diffRange) {
-    return extractFromGitDiff(filePatterns, cwd, options, maxChars);
+  const gitDiff = options.gitDiff;
+  if (gitDiff?.staged || gitDiff?.diffRange) {
+    return extractFromGitDiff(filePatterns, cwd, gitDiff, options.contextLines, maxChars);
   }
 
   const resolvedPaths = await resolveGlobPatterns(filePatterns, cwd);
@@ -91,10 +91,11 @@ export async function extractCodeContext(
 async function extractFromGitDiff(
   filePatterns: readonly string[],
   cwd: string,
-  options: CodeExtractionOptions,
+  gitDiff: GitDiffOptions,
+  contextLines: number | undefined,
   maxChars: number
 ): Promise<ExtractedCodeContext> {
-  const diff = await extractGitDiff(options.gitDiff!, cwd, options.contextLines);
+  const diff = await extractGitDiff(gitDiff, cwd, contextLines);
   const matched = diff.files.filter((file) => matchesGlobPatterns(file.relativePath, filePatterns));
 
   if (matched.length > MAX_FILE_COUNT) {

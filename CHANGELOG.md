@@ -3,6 +3,16 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The exported union types no longer contain `any`: `AnyRubric`, `AnyAssertion` and `AnyRubricResult` use `string` for choice keys, and `JevSpecConfig.zones` is typed as the new exported `AnyZoneConfig` instead of `ZoneConfig<any>`. Runtime behaviour is unchanged. Hand-written `JevSpecConfig` objects are now type-checked more strictly (for example, a misspelled assertion option is a compile error).
+
+### Internal
+
+- Biome now lints and formats the code base. `npm run lint` runs `biome check --error-on-warnings .`, `npm run lint:fix` applies formatting and safe fixes, and CI runs the lint step.
+
 ## [0.1.1] - 2026-09-21
 
 A bug-fix release. Several of these bugs made a check pass, fail or get skipped for the wrong reason, so upgrading is recommended for everyone on 0.1.0.
@@ -43,5 +53,6 @@ A bug-fix release. Several of these bugs made a check pass, fail or get skipped 
 
 - Initial release.
 
+[Unreleased]: https://github.com/nozomi-koborinai/jev-spec/compare/v0.1.1...HEAD
 [0.1.1]: https://github.com/nozomi-koborinai/jev-spec/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nozomi-koborinai/jev-spec/releases/tag/v0.1.0
