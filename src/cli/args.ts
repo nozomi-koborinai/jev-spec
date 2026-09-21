@@ -17,8 +17,8 @@ export const USAGE = `Usage: jev-spec check [options]
 Options:
   -c, --config <file>    Path to the configuration file (default: jev-spec.config.{ts,js,mjs})
   -t, --target <name>    Check a single target
-      --staged           Check staged git changes only
-      --diff [range]     Check a git diff range (default: HEAD), e.g. origin/main...HEAD
+      --staged           Check only the targets that the staged changes touch, each in full
+      --diff [range]     Check only the targets that a git diff touches (default: HEAD), e.g. origin/main...HEAD
   -f, --format <format>  Output format: terminal (default), markdown, json
   -o, --output <file>    Write the report to a file inside the project root
       --dry-run          Validate config, spec parsing and file matching; evaluates nothing, needs no API key

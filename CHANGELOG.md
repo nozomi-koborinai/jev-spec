@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- `jev-spec --help` still described `--staged` as "Check staged git changes only" and `--diff` as "Check a git diff range", which is what they did before 0.3.0. Both lines now say what a diff run does: it checks only the targets that the change touches, each in full. The code comments in the READMEs say the same, and the Japanese, Chinese and Korean READMEs head the section "diff run" instead of "check only the changes", which contradicted the sentence below it.
+
 ## [0.3.0] - 2026-09-21
 
 The first release that has been run against the live model, and it shows. jev-spec now has specs of its own and checks itself against them; doing that for the first time changed how rubrics are written, how `--staged` and `--diff` work, and what the documentation promises. Four changes are breaking: read the upgrade notes.

@@ -339,10 +339,10 @@ bunx jev-spec check --target auth
 Check only the targets whose code changed. Each of them is checked in full:
 
 ```bash
-# Check staged git changes (ideal for pre-commit git hooks)
+# Check the targets that the staged changes touch (ideal for pre-commit git hooks)
 bunx jev-spec check --staged
 
-# Check the diff of a branch range (ideal for pull request CI)
+# Check the targets that a branch range touches (ideal for pull request CI)
 bunx jev-spec check --diff origin/main...HEAD
 ```
 

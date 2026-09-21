@@ -94,6 +94,16 @@ describe('CLI entry point', () => {
     expect(stdout).toContain('--staged');
   });
 
+  it('describes --staged and --diff as choosing targets, which is what a diff run does', async () => {
+    const { stdout } = await captureConsole(() => main(['--help']));
+    const lines = stdout.split('\n');
+
+    for (const option of ['--staged', '--diff']) {
+      const line = lines.find((candidate) => candidate.trimStart().startsWith(option)) ?? '';
+      expect(line).toContain('targets');
+    }
+  });
+
   it('prints the package version and exits 0 for --version', async () => {
     const pkg = JSON.parse(await fs.readFile(path.join(pkgRoot, 'package.json'), 'utf-8')) as {
       version: string;

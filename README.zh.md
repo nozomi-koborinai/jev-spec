@@ -334,15 +334,15 @@ npx jev-spec check
 bunx jev-spec check --target auth
 ```
 
-#### 只检查改动（Pre-commit 钩子与 CI）
+#### Diff 运行（Pre-commit 钩子与 CI）
 
 只检查代码发生改动的目标，被选中的目标会完整地接受检查：
 
 ```bash
-# 检查 Git 暂存区中的改动（非常适合 pre-commit 钩子）
+# 检查暂存改动所触及的目标（非常适合 pre-commit 钩子）
 bunx jev-spec check --staged
 
-# 检查分支区间的 Diff（非常适合 PR 门禁 CI）
+# 检查分支区间的改动所触及的目标（非常适合 PR 门禁 CI）
 bunx jev-spec check --diff origin/main...HEAD
 ```
 

@@ -334,15 +334,15 @@ npx jev-spec check
 bunx jev-spec check --target auth
 ```
 
-#### 변경분만 검사 (Pre-commit 훅 및 CI)
+#### Diff 실행 (Pre-commit 훅 및 CI)
 
 코드가 변경된 대상만 검사합니다. 선택된 대상은 전체를 검사합니다.
 
 ```bash
-# 스테이징된 Git 변경 사항 검사 (pre-commit 훅에 최적)
+# 스테이징된 변경이 닿은 대상을 검사 (pre-commit 훅에 최적)
 bunx jev-spec check --staged
 
-# 브랜치 범위 Diff 검사 (PR CI 파이프라인에 최적)
+# 브랜치 범위의 변경이 닿은 대상을 검사 (PR CI 파이프라인에 최적)
 bunx jev-spec check --diff origin/main...HEAD
 ```
 
