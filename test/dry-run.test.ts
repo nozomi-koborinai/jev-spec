@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { after, beforeEach, describe, test as it } from 'node:test';
+import { after, before, beforeEach, describe, test as it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { CliUsageError, parseCliArgs } from '../src/cli/args.js';
 import { checkCommand } from '../src/cli/commands/check.js';
@@ -12,35 +12,41 @@ import { SpecFilterError } from '../src/parser/markdown-parser.js';
 import { runChecks } from '../src/runner/engine.js';
 import { formatMarkdownReport, formatTerminalReport } from '../src/runner/reporter.js';
 import type { JevSpecConfig, OverallCheckResult } from '../src/types.js';
+import { OWN_CODE_PATH, OWN_SPEC_PATH, ownRequirementIds, SAMPLE_TARGET } from './own-project.js';
 import { captureConsole, expect } from './test-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pkgRoot = path.resolve(__dirname, '../..');
 
-/** No `client.mock` and no API key: a real run of this config cannot even start. */
-const liveConfig: JevSpecConfig = {
-  targets: {
-    auth: {
-      specPath: 'test/fixtures/specs/auth-requirements.md',
-      codePaths: ['test/fixtures/src/**/*.ts', '!**/*.test.ts'],
-      rubrics: {
-        verifiesSessionTokens: {
-          type: 'noul',
-          question: 'Does the code satisfy REQ-AUTH-01: session tokens are verified?',
-        },
-        rejectsRevokedTokens: {
-          type: 'noul',
-          question: 'Does the code satisfy REQ-AUTH-02: revoked tokens are rejected?',
-        },
-      },
-      assertions: {
-        verifiesSessionTokens: { minProbability: 0.85 },
-        rejectsRevokedTokens: { minProbability: 0.85 },
+/**
+ * No `client.mock` and no API key: a real run of this config cannot even start. The target reads
+ * a real spec of this repository, and one rubric names each requirement that the spec declares.
+ */
+function buildLiveConfig(requirementIds: readonly string[]): JevSpecConfig {
+  const rubrics = Object.fromEntries(
+    requirementIds.map((id, index) => [
+      `requirement${index + 1}`,
+      { type: 'noul' as const, question: `Does the code satisfy ${id}?` },
+    ])
+  );
+  const assertions = Object.fromEntries(
+    Object.keys(rubrics).map((name) => [name, { minProbability: 0.85 }])
+  );
+  return {
+    targets: {
+      [SAMPLE_TARGET]: {
+        specPath: OWN_SPEC_PATH,
+        codePaths: [OWN_CODE_PATH, '!**/*.test.ts'],
+        rubrics,
+        assertions,
       },
     },
-  },
-};
+  };
+}
+
+let ids: string[] = [];
+let liveConfig: JevSpecConfig = { targets: {} };
 
 const explodingEvaluator: JevEvaluator = {
   async evaluate() {
@@ -49,6 +55,11 @@ const explodingEvaluator: JevEvaluator = {
 };
 
 describe('dry run', () => {
+  before(async () => {
+    ids = await ownRequirementIds(pkgRoot);
+    liveConfig = buildLiveConfig(ids);
+  });
+
   const savedKeys = {
     TYPESAFE_AI_API_KEY: process.env.TYPESAFE_AI_API_KEY,
     TYPESAFE_API_KEY: process.env.TYPESAFE_API_KEY,
@@ -76,10 +87,11 @@ describe('dry run', () => {
     expect(result.passed).toBe(true);
 
     const target = result.targets[0];
-    expect(target.codeFiles).toEqual(['test/fixtures/src/auth.ts']);
+    expect(ids.length > 1).toBe(true);
+    expect(target.codeFiles).toEqual([OWN_CODE_PATH]);
     expect(target.evaluations).toHaveLength(0);
-    expect(target.plan?.requirementIds).toEqual(['REQ-AUTH-01', 'REQ-AUTH-02']);
-    expect(target.plan?.rubrics).toEqual(['verifiesSessionTokens', 'rejectsRevokedTokens']);
+    expect(target.plan?.requirementIds).toEqual(ids);
+    expect(target.plan?.rubrics).toEqual(Object.keys(liveConfig.targets[SAMPLE_TARGET].rubrics));
     expect(target.plan?.warnings).toEqual([]);
     assert.ok((target.plan?.specChars ?? 0) > 0, 'specChars should be reported');
     assert.ok((target.plan?.codeChars ?? 0) > 0, 'codeChars should be reported');
@@ -88,10 +100,10 @@ describe('dry run', () => {
   it('lists the requirements that no rubric names', async () => {
     const partial: JevSpecConfig = {
       targets: {
-        auth: {
-          ...liveConfig.targets.auth,
-          rubrics: { verifiesSessionTokens: liveConfig.targets.auth.rubrics.verifiesSessionTokens },
-          assertions: { verifiesSessionTokens: { minProbability: 0.85 } },
+        [SAMPLE_TARGET]: {
+          ...liveConfig.targets[SAMPLE_TARGET],
+          rubrics: { requirement1: liveConfig.targets[SAMPLE_TARGET].rubrics.requirement1 },
+          assertions: { requirement1: { minProbability: 0.85 } },
         },
       },
     };
@@ -100,9 +112,9 @@ describe('dry run', () => {
     const result = await runChecks(partial, { cwd: pkgRoot, dryRun: true });
 
     expect(covered.targets[0].plan?.unreferencedRequirementIds).toEqual([]);
-    expect(result.targets[0].plan?.unreferencedRequirementIds).toEqual(['REQ-AUTH-02']);
+    expect(result.targets[0].plan?.unreferencedRequirementIds).toEqual(ids.slice(1));
     expect(result.targets[0].plan?.warnings).toHaveLength(1);
-    expect(formatTerminalReport(result)).toContain('REQ-AUTH-02');
+    expect(formatTerminalReport(result)).toContain(ids[1]);
   });
 
   it('does not mistake REQ-AUTH-1 for REQ-AUTH-10 when matching requirement IDs', async () => {
@@ -149,7 +161,10 @@ describe('dry run', () => {
   it('still fails on a broken setup, such as a specFilter that matches nothing', async () => {
     const broken: JevSpecConfig = {
       targets: {
-        auth: { ...liveConfig.targets.auth, specFilter: { requirementPrefix: 'REQ-AUHT-' } },
+        [SAMPLE_TARGET]: {
+          ...liveConfig.targets[SAMPLE_TARGET],
+          specFilter: { requirementPrefix: 'REQ-EXTI-' },
+        },
       },
     };
 
@@ -159,7 +174,10 @@ describe('dry run', () => {
   it('warns when the codePaths of a target match no file', async () => {
     const empty: JevSpecConfig = {
       targets: {
-        auth: { ...liveConfig.targets.auth, codePaths: ['test/fixtures/nowhere/**/*.ts'] },
+        [SAMPLE_TARGET]: {
+          ...liveConfig.targets[SAMPLE_TARGET],
+          codePaths: ['src/nowhere/**/*.ts'],
+        },
       },
     };
 
@@ -171,8 +189,8 @@ describe('dry run', () => {
   });
 
   it('flags a code context that was cut at the character budget', async () => {
-    const full = await extractCodeContext(['test/fixtures/src/**/*.ts'], { cwd: pkgRoot });
-    const cut = await extractCodeContext(['test/fixtures/src/**/*.ts'], {
+    const full = await extractCodeContext([OWN_CODE_PATH], { cwd: pkgRoot });
+    const cut = await extractCodeContext([OWN_CODE_PATH], {
       cwd: pkgRoot,
       maxTotalChars: 40,
     });
@@ -186,8 +204,8 @@ describe('dry run', () => {
 
     const terminal = formatTerminalReport(result);
     expect(terminal).toContain('DRY RUN');
-    expect(terminal).toContain('REQ-AUTH-01');
-    expect(terminal).toContain('test/fixtures/src/auth.ts');
+    expect(terminal).toContain(ids[0]);
+    expect(terminal).toContain(OWN_CODE_PATH);
     expect(terminal.includes('ALL CHECKS PASSED')).toBe(false);
 
     const markdown = formatMarkdownReport(result);
@@ -260,7 +278,7 @@ describe('dry run from the command line', () => {
     expect(result).toBe(0);
     const report = JSON.parse(stdout) as OverallCheckResult;
     expect(report.dryRun).toBe(true);
-    expect(report.targets[0].plan?.requirementIds).toEqual(['REQ-AUTH-01', 'REQ-AUTH-02']);
+    expect(report.targets[0].plan?.requirementIds).toEqual(ids);
   });
 
   it('exits 2 when the setup is broken', async () => {

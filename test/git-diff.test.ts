@@ -21,7 +21,7 @@ describe('extractGitDiff against a real git repository', () => {
     await repo.cleanup();
   });
 
-  it('returns the files changed in a revision range', async () => {
+  it('REQ-GIT-03: reads a revision range as a revision and returns the files changed in it', async () => {
     const diff = await extractGitDiff({ diffRange: 'main...HEAD' }, repo.dir);
 
     expect(diff.changedPaths).toEqual(['src/a.ts']);
