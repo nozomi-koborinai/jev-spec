@@ -21,8 +21,8 @@ Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
   Model: jev-1.13.0
-    ✔ verifiesSessionTokens: probability: 0.97
-    ✖ rejectsRevokedTokens: probability: 0.08
+    ✔ REQ-AUTH-01: probability: 0.97
+    ✖ REQ-AUTH-02: probability: 0.08
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
     ✔ introducesUnspecifiedBehavior: probability: 0.03
 
@@ -66,11 +66,15 @@ $ echo $?
 
 - **確率は証明ではありません。** jev-spec が教えるのは、コードが要件からおそらくずれた、ということです。テストやレビューを補うものであり、どちらの代わりにもなりません。しきい値は、信頼する前に自分のコードで調整してください。
 - **ターゲットは小さく保ってください。** 1 つのターゲットは 1 回のリクエストで送られます。`src/` 全体ではなく、1 つの領域にしてください。無関係な内容が増えるほど Jev の精度は下がります（[既知の限界](https://docs.typesafe.ai/model-jaggedness/jev-1.13)を参照）。
-- **質問は狭く。** 1 つの質問に要件は 1 つ。複数の条件をまとめた質問、数を数える質問、否定が重なる質問は、回答の信頼性が下がります。
+- **質問は狭く、字義どおりに。** 1 つの質問に振る舞いは 1 つ。直接の疑問文（「Is a token rejected when …?」）で尋ね、似た箇所が 2 つあるときは、どの部分のことかを言い添えてください。要件を主張の形で言い直した質問、複数の条件をまとめた質問、数を数える質問、否定が重なる質問は、回答の信頼性が下がります。
 - **英語が最も正確です。** Jev の[主な学習言語は英語](https://docs.typesafe.ai/models#language-support)です。日本語・中国語・韓国語を含むその他の言語も受け付けますが、精度は下がります。TypeSafe も、まず自分の文書で試すよう勧めています。英語以外の仕様書で使う場合は、ゲートにする前に、自分の文書でしきい値を調整してください。
 - **仕様書内の Markdown テーブルは、まだモデルに送られません。** 行の内容を質問の中で言い直すか、要件をリストで書いてください。
 - **`--staged` と `--diff` が送るのは、変更されたハンクだけです。** ファイル全体より文脈が少ないため、素早いフィードバック向きです。すべてを見るのはフルチェックです。
-- **実際の検査には [TypeSafe の API キー](https://console.typesafe.ai/keys)が必要です。** `jev-spec check --dry-run` なら、キーなしでセットアップを検証できます。
+- **実際のチェックには [TypeSafe の API キー](https://console.typesafe.ai/keys)が必要です。** `jev-spec check --dry-run` なら、キーなしでセットアップを検証できます。
+
+### jev-spec は自分自身をチェックしています
+
+jev-spec には自前の仕様書があり、それに照らしてチェックされています。[`docs/specs/`](docs/specs) が要件を定め、[`jev-spec.config.ts`](jev-spec.config.ts) が要件のまとまりごとに、それを実装する 1〜3 個のファイルを組にし、[`test/probes/`](test/probes) には、要件ごとに、その要件をわざと壊すパッチがあります。ルーブリックをゲートに入れてよいのは、無傷のコードで合格し、壊したコピーで不合格になるときだけです。[`docs/probe-results.md`](docs/probe-results.md) に最新の結果を記録しています。`jev-1.13.0` で、18 個のプローブのうち 18 個を検出しました。6 ターゲット・18 ルーブリックの全体チェックは 3 秒未満で終わり、コストの見積もりは $0.0004 です。最初の実行はこうではありませんでした。変える必要があったのは、しきい値ではなく質問のほうでした。そこで分かったことは、設定ファイルの冒頭のコメントにまとめてあります。
 
 ### アーキテクチャ概要
 
@@ -136,14 +140,12 @@ export default defineConfig({
         requirementPrefix: 'REQ-AUTH-',
       },
       rubrics: {
-        verifiesSessionTokens: noul(
-          'Does the code satisfy REQ-AUTH-01: the signature of every session token is verified before access to a protected resource is granted?'
+        'REQ-AUTH-01': noul(
+          'Is the signature of a session token checked before access to a protected resource is granted?'
         ),
-        rejectsRevokedTokens: noul(
-          'Does the code satisfy REQ-AUTH-02: a token whose ID is on the revocation list is rejected?'
-        ),
+        'REQ-AUTH-02': noul('Is a token rejected when its ID is on the revocation list?'),
         introducesUnspecifiedBehavior: noul(
-          'Does the implementation introduce undocumented endpoints, global state mutability, or unauthenticated bypasses?'
+          'Does the code add a way to reach a protected resource that the spec does not describe?'
         ),
         securityPosture: choice('Security posture of session management', {
           secure: 'Proper signature validation and revocation checks present',
@@ -156,8 +158,8 @@ export default defineConfig({
         ]),
       },
       assertions: {
-        verifiesSessionTokens: { minProbability: 0.85 },
-        rejectsRevokedTokens: { minProbability: 0.85 },
+        'REQ-AUTH-01': { minProbability: 0.85 },
+        'REQ-AUTH-02': { minProbability: 0.85 },
         introducesUnspecifiedBehavior: { maxProbability: 0.15 },
         securityPosture: { allowedChoices: ['secure'], minConfidence: 0.75 },
         implementationCompleteness: { minScore: 1.8 },
@@ -167,7 +169,7 @@ export default defineConfig({
 });
 ```
 
-質問は要件ごとに 1 つずつ、要件 ID を明記して書いてください。複数の要件を 1 つの質問にまとめると、どの要件で失敗したのか分からなくなり、モデルの回答の信頼性も下がります。
+ルーブリックには、チェックする要件の ID を名前として付け、コードがすべきことを、直接・字義どおりに 1 つだけ尋ねてください。ルーブリックの名前はモデルには送られず、レポートに表示されるので、不合格のときにどの要件かがそのまま分かります。ID は質問文に入れないでください。[このリポジトリ自身での実測](docs/probe-results.md)では、「Does the code satisfy REQ-AUTH-01: …?」という形の質問は、わざと壊したコードにも「はい」と答えられ、同じ内容を直接尋ねた質問はそうなりませんでした。複数の要件を 1 つの質問にまとめると、どの要件で失敗したのか分からなくなります。
 
 ### 3. チェックの実行
 

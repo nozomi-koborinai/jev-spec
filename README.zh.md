@@ -21,8 +21,8 @@ Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
   Model: jev-1.13.0
-    ✔ verifiesSessionTokens: probability: 0.97
-    ✖ rejectsRevokedTokens: probability: 0.08
+    ✔ REQ-AUTH-01: probability: 0.97
+    ✖ REQ-AUTH-02: probability: 0.08
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
     ✔ introducesUnspecifiedBehavior: probability: 0.03
 
@@ -66,11 +66,15 @@ Linter 和 schema 校验可以告诉你 `REQ-AUTH-02` 存在、格式正确，�
 
 - **概率不是证明。** jev-spec 告诉你的是：代码很可能已经偏离了某条需求。它是测试与评审的补充，不能替代其中任何一个。在信任阈值之前，请先用你自己的代码对其进行调整。
 - **让目标保持小而专。** 一个目标在一次请求中发送。请让它只覆盖一个领域，而不是整个 `src/` 目录：无关内容越多，Jev 的准确度越低（参见其[已知局限](https://docs.typesafe.ai/model-jaggedness/jev-1.13)）。
-- **问题要窄。** 一个问题只问一条需求。包含多个条件、需要计数或多重否定的问题，回答的可靠性会下降。
+- **问题要窄，要按字面提问。** 一个问题只问一个行为，用直接的疑问句（“Is a token rejected when …?”），当代码中有两处相似的地方时，请说明你指的是哪一处。把需求改写成断言的问题、包含多个条件的问题、需要计数或多重否定的问题，回答的可靠性都会下降。
 - **英语效果最好。** Jev 的[主要训练语言是英语](https://docs.typesafe.ai/models#language-support)。它也接受包括中日韩文字在内的其他语言，但准确度较低，TypeSafe 也建议先用你自己的内容进行测试。如果规范文档不是英文，请先用你自己的文档调整阈值，再把它用作门禁。
 - **规范中的 Markdown 表格目前不会发送给模型。** 请在问题中复述表格行的内容，或者把需求写成列表。
 - **`--staged` 与 `--diff` 只发送发生变更的代码块（hunk）。** 上下文比完整文件少：适合快速反馈，而完整检查能看到全部内容。
 - **真实检查需要 [TypeSafe API Key](https://console.typesafe.ai/keys)。** `jev-spec check --dry-run` 无需 Key 即可校验你的配置。
+
+### jev-spec 也检查它自己
+
+jev-spec 有自己的规范文档，并接受这些规范的检查。[`docs/specs/`](docs/specs) 写明需求，[`jev-spec.config.ts`](jev-spec.config.ts) 把每组需求与实现它的一到三个文件配对，[`test/probes/`](test/probes) 则为每条需求准备了一个故意破坏它的补丁。只有在完好的代码上通过、在被破坏的副本上未通过的 Rubric，才有资格进入门禁。[`docs/probe-results.md`](docs/probe-results.md) 记录了最近一次运行的结果：使用 `jev-1.13.0`，18 个探针全部被检出。对 6 个目标、18 个 Rubric 的完整检查耗时不到三秒，预估成本为 $0.0004。第一次运行并非如此：需要修改的是问题，而不是阈值；我们从中学到的内容写在配置文件开头的注释里。
 
 ### 架构概览
 
@@ -136,14 +140,12 @@ export default defineConfig({
         requirementPrefix: 'REQ-AUTH-',
       },
       rubrics: {
-        verifiesSessionTokens: noul(
-          'Does the code satisfy REQ-AUTH-01: the signature of every session token is verified before access to a protected resource is granted?'
+        'REQ-AUTH-01': noul(
+          'Is the signature of a session token checked before access to a protected resource is granted?'
         ),
-        rejectsRevokedTokens: noul(
-          'Does the code satisfy REQ-AUTH-02: a token whose ID is on the revocation list is rejected?'
-        ),
+        'REQ-AUTH-02': noul('Is a token rejected when its ID is on the revocation list?'),
         introducesUnspecifiedBehavior: noul(
-          'Does the implementation introduce undocumented endpoints, global state mutability, or unauthenticated bypasses?'
+          'Does the code add a way to reach a protected resource that the spec does not describe?'
         ),
         securityPosture: choice('Security posture of session management', {
           secure: 'Proper signature validation and revocation checks present',
@@ -156,8 +158,8 @@ export default defineConfig({
         ]),
       },
       assertions: {
-        verifiesSessionTokens: { minProbability: 0.85 },
-        rejectsRevokedTokens: { minProbability: 0.85 },
+        'REQ-AUTH-01': { minProbability: 0.85 },
+        'REQ-AUTH-02': { minProbability: 0.85 },
         introducesUnspecifiedBehavior: { maxProbability: 0.15 },
         securityPosture: { allowedChoices: ['secure'], minConfidence: 0.75 },
         implementationCompleteness: { minScore: 1.8 },
@@ -167,7 +169,7 @@ export default defineConfig({
 });
 ```
 
-请为每条需求单独编写一个聚焦的问题，并写明需求 ID。把多条需求合并进一个问题，既无法得知究竟是哪一条未通过，模型的回答也会更不可靠。
+请用所检查的需求 ID 为 Rubric 命名，并就“代码必须做到什么”直接、按字面地只问一件事。Rubric 的名称不会发送给模型，但会显示在报告中，因此未通过时一眼就能看出是哪条需求。不要把 ID 写进问题里：在[我们对本仓库自身的实测](docs/probe-results.md)中，“Does the code satisfy REQ-AUTH-01: …?” 这种问法对故意改坏的代码也得到了“是”，而直接提问则不会。把多条需求合并进一个问题，就无法得知究竟是哪一条未通过。
 
 ### 3. 执行检查
 
