@@ -21,8 +21,23 @@ export interface EvaluationInput {
   readonly rubrics: Record<string, AnyRubric>;
 }
 
+export interface EvaluationOutput {
+  readonly answers: Record<string, AnyRubricResult>;
+  /** Versioned ID of the model that answered. Absent when no model was involved (mock). */
+  readonly model?: string;
+}
+
 export interface JevEvaluator {
-  evaluate(input: EvaluationInput): Promise<Record<string, AnyRubricResult>>;
+  evaluate(input: EvaluationInput): Promise<EvaluationOutput>;
+}
+
+/** The part of the TypeSafe client that the live evaluator uses; a test can supply its own. */
+export interface SystemOneClient {
+  systemOne(request: {
+    state: unknown;
+    questions: Questions;
+    model?: string;
+  }): PromiseLike<{ readonly model: string; readonly answers: Record<string, unknown> }>;
 }
 
 export interface EvaluationUsage {
@@ -41,6 +56,7 @@ const MISSING_API_KEY_MESSAGE =
   'API key is required. Set TYPESAFE_AI_API_KEY (or TYPESAFE_API_KEY) environment variable, or configure client.apiKey in jev-spec.config.';
 
 const DEFAULT_BASE_URL = 'https://api.typesafe.ai';
+const DEFAULT_MODEL = 'jev-latest';
 
 /**
  * Resolves API key from config or environment variables.
@@ -56,6 +72,23 @@ export function resolveApiKey(config?: JevClientConfig): string | undefined {
     return process.env.TYPESAFE_API_KEY.trim();
   }
   return undefined;
+}
+
+/**
+ * Resolves the model name the same way the SDK does: configuration, then
+ * `TYPESAFE_DEFAULT_MODEL`, then the alias `jev-latest`.
+ */
+export function resolveModel(config?: JevClientConfig): string {
+  return config?.model?.trim() || process.env.TYPESAFE_DEFAULT_MODEL?.trim() || DEFAULT_MODEL;
+}
+
+/**
+ * True for a name that TypeSafe moves to a newer model with a release (`jev-latest`,
+ * `jev-preview`). Thresholds tuned against an alias can stop holding without any change in
+ * the repository.
+ */
+export function isModelAlias(model: string): boolean {
+  return /-(latest|preview)$/.test(model);
 }
 
 /**
@@ -83,7 +116,7 @@ export function resolveBaseUrl(config?: JevClientConfig): string {
  * Deterministic Mock Evaluator used for testing and offline development.
  */
 export class MockJevEvaluator implements JevEvaluator {
-  async evaluate(input: EvaluationInput): Promise<Record<string, AnyRubricResult>> {
+  async evaluate(input: EvaluationInput): Promise<EvaluationOutput> {
     const results: Record<string, AnyRubricResult> = {};
 
     for (const [key, rubric] of Object.entries(input.rubrics)) {
@@ -96,7 +129,7 @@ export class MockJevEvaluator implements JevEvaluator {
       }
     }
 
-    return results;
+    return { answers: results };
   }
 
   private evaluateNoul(rubric: NoulRubric, input: EvaluationInput) {
@@ -163,25 +196,30 @@ export class MockJevEvaluator implements JevEvaluator {
  * Live evaluator backed by @typesafe-ai/sdk systemOne parallel question API.
  */
 export class LiveJevEvaluator implements JevEvaluator {
-  private readonly client: TypeSafeClient;
+  private readonly client: SystemOneClient;
+  private readonly model: string;
 
-  constructor(config?: JevClientConfig) {
-    this.client = new TypeSafeClient({
-      apiKey: resolveApiKey(config),
-      baseURL: resolveBaseUrl(config),
-      timeout: config?.timeoutMs ?? 10_000,
-    });
+  constructor(config?: JevClientConfig, client?: SystemOneClient) {
+    this.model = resolveModel(config);
+    this.client =
+      client ??
+      new TypeSafeClient({
+        apiKey: resolveApiKey(config),
+        baseURL: resolveBaseUrl(config),
+        timeout: config?.timeoutMs ?? 10_000,
+      });
   }
 
-  async evaluate(input: EvaluationInput): Promise<Record<string, AnyRubricResult>> {
+  async evaluate(input: EvaluationInput): Promise<EvaluationOutput> {
     const questions = this.buildQuestions(input.rubrics);
     const secureState = buildSecureEvaluationState(input.specContext, input.codeContext);
     const response = await this.client.systemOne({
       state: secureState,
       questions,
+      model: this.model,
     });
 
-    return this.mapAnswers(input.rubrics, response.answers);
+    return { answers: this.mapAnswers(input.rubrics, response.answers), model: response.model };
   }
 
   private buildQuestions(rubrics: Record<string, AnyRubric>): Questions {

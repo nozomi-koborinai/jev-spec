@@ -231,6 +231,14 @@ function validateTarget(path: string, target: unknown, issues: string[]): void {
  */
 export function validateConfig(config: JevSpecConfig): void {
   const issues: string[] = [];
+  const client: unknown = (config as { client?: unknown } | null | undefined)?.client;
+
+  if (isRecord(client) && client.model !== undefined) {
+    if (typeof client.model !== 'string' || client.model.trim() === '') {
+      issues.push('client.model: must be a non-empty string such as "jev-1.13.0"');
+    }
+  }
+
   const targets: unknown = (config as { targets?: unknown } | null | undefined)?.targets;
 
   if (!isRecord(targets) || Object.keys(targets).length === 0) {

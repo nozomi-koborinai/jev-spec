@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- `client.model` pins the model that answers, for example `model: 'jev-1.13.0'`. Without it jev-spec asks the alias `jev-latest`, which TypeSafe moves to a newer model with every release, so a result could change without any change in the repository. `TYPESAFE_DEFAULT_MODEL` is honoured as well. Every report now prints the versioned model that answered (`Model: jev-1.13.0`; `targets[].model` in JSON), and `--dry-run` warns while the model is an alias (`warnings` at the top level of the JSON report). A `client.model` that is not a non-empty string is a configuration error (exit code `2`).
+
 ### Changed
 
 - New tagline, "Catch spec drift on every commit.", in the four READMEs, in the package description and in the hero image. The previous one, "Unit tests for your specs.", read as if the spec were the thing under test, and a unit test is deterministic while a check is a probability compared with a threshold. The hero image is now a real PNG (the old file was a JPEG with a `.png` name) and can be rendered again from `assets/hero.html`.
@@ -13,12 +17,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Breaking: zones are now called targets.** A target is one part of a spec paired with the code that implements it, checked as a unit; "zone" suggested a region of the code base and never said so. The configuration key `zones` is `targets`, the CLI option `--zone` / `-z` is `--target` / `-t`, and the JSON report has `targets[].targetName` instead of `zones[].zoneName`. The exported names follow: `ZoneConfig` is `TargetConfig`, `AnyZoneConfig` is `AnyTargetConfig`, `ZoneCheckResult` is `TargetCheckResult`, `ZonePlan` is `TargetPlan`. There is no alias: a configuration that still has `zones` stops with exit code `2` (`"targets" object is required`).
 - **Breaking: the act is called a check everywhere, no longer a verification.** The exported `runVerification` is `runChecks`. The terminal report is headed "jev-spec Check Report" and ends with "CHECKS FAILED" when an assertion is violated (it said "VERIFICATION FAILED"; the passing line already said "ALL CHECKS PASSED"). The markdown report is headed "Check Summary", the help text says "Check a single target", and the dry-run warning reads "jev-spec does not check these requirements". "Verify" suggested proof, and a check compares a probability with a threshold.
 - The READMEs define a target where it is configured, and the Chinese and Korean READMEs use one word for it throughout (they mixed "Zone" with a translation).
+- **Breaking for custom evaluators:** `JevEvaluator.evaluate()` resolves to `{ answers, model? }` instead of the bare record of answers, so that an evaluator can report which model answered. `LiveJevEvaluator` accepts a client as a second constructor argument, which makes it testable without the network.
 
 ### Upgrade notes
 
 - Rename `zones` to `targets` in `jev-spec.config.*`, and `--zone` to `--target` in scripts, hooks and workflows.
 - If something parses the JSON report, read `targets` and `targetName`. If something searches the terminal report for `VERIFICATION FAILED`, it is `CHECKS FAILED` now; the exit code is the better signal.
 - If you call the library, `runVerification` is `runChecks` and the `Zone*` types are `Target*`.
+- After tuning thresholds, set `client.model` to the versioned ID that the report prints.
+- A custom `JevEvaluator` returns `{ answers }` now.
 
 ### Internal
 

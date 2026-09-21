@@ -125,6 +125,7 @@ In both branches: **do not change a rubric, a threshold, the number of score lev
 1. The user creates a key at <https://console.typesafe.ai/keys> and exports `TYPESAFE_AI_API_KEY` (`TYPESAFE_API_KEY` works too). Never write the key into the config or commit it.
 2. Run `npx jev-spec check`. A check costs a fraction of a cent.
 3. Calibrate: compare the probabilities for code known to be right with a deliberately broken copy (remove a required check, then restore it). Set each threshold between the two with margin. A `noul` that stays near `0.5` means the model cannot tell: improve the question or shrink the target instead of lowering the threshold.
+4. Pin the model: copy the versioned ID from the `Model:` line of the report into `client: { model: '…' }` in the config. Without it jev-spec asks the alias `jev-latest`, which moves to a newer model with every release, and the thresholds you just set stop being comparable. (`npx jev-spec --help` on versions before 0.3.0 has no such option; skip this item there.)
 
 If the user has no key yet, finish steps 1–5, say clearly that **nothing has been verified yet**, and leave step 6 as their next action.
 

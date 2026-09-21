@@ -20,6 +20,7 @@ $ npx jev-spec check
 Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
+  Model: jev-1.13.0
     ✔ verifiesSessionTokens: probability: 0.97
     ✖ rejectsRevokedTokens: probability: 0.08
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
@@ -293,6 +294,19 @@ export interface TargetConfig {
 ```
 
 `specFilter` keeps every section that satisfies all of the given criteria, together with its nested subsections, so details written under deeper headings stay part of the requirement. A filter that matches no section is treated as a configuration error (exit code `2`) rather than silently sending the whole document.
+
+### Pinning the Model
+
+```typescript
+export default defineConfig({
+  client: { model: 'jev-1.13.0' },
+  targets: {
+    // …
+  },
+});
+```
+
+Without `client.model`, jev-spec asks `jev-latest`, an alias that TypeSafe moves to a newer model with every release, so a result can change without any change in your repository. Once you have tuned your thresholds, pin the [versioned model ID](https://docs.typesafe.ai/models) they were tuned against (`TYPESAFE_DEFAULT_MODEL` works too). Every report prints the model that answered (`Model: jev-1.13.0`), and `--dry-run` warns while the model is not pinned.
 
 ### CLI Usage Reference
 

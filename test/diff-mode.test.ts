@@ -2,21 +2,22 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test as it } from 'node:test';
 import {
   type EvaluationInput,
+  type EvaluationOutput,
   type JevEvaluator,
   JevSpecConfigurationError,
 } from '../src/evaluator/jev-evaluator.js';
 import { runChecks } from '../src/runner/engine.js';
 import { formatMarkdownReport, formatTerminalReport } from '../src/runner/reporter.js';
-import type { AnyRubricResult, JevSpecConfig } from '../src/types.js';
+import type { JevSpecConfig } from '../src/types.js';
 import { createTempGitRepo, type TempGitRepo } from './git-test-utils.js';
 import { expect } from './test-utils.js';
 
 class RecordingEvaluator implements JevEvaluator {
   readonly calls: EvaluationInput[] = [];
 
-  async evaluate(input: EvaluationInput): Promise<Record<string, AnyRubricResult>> {
+  async evaluate(input: EvaluationInput): Promise<EvaluationOutput> {
     this.calls.push(input);
-    return { satisfies: { type: 'noul', probability: 0.95 } };
+    return { answers: { satisfies: { type: 'noul', probability: 0.95 } } };
   }
 }
 

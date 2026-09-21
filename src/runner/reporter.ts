@@ -62,6 +62,9 @@ export function formatTerminalReport(result: OverallCheckResult): string {
     lines.push(`Target: ${target.targetName} [${icon} ${target.passed ? 'PASSED' : 'FAILED'}]`);
     lines.push(`  Spec files: ${target.specFiles.join(', ')}`);
     lines.push(`  Code files: ${target.codeFiles.join(', ')}`);
+    if (target.model) {
+      lines.push(`  Model: ${target.model}`);
+    }
 
     for (const ev of target.evaluations) {
       const statusIcon = ev.passed ? '✔' : '✖';
@@ -87,10 +90,16 @@ export function formatTerminalReport(result: OverallCheckResult): string {
   const overallIcon = result.passed ? '✔' : '✖';
   const skippedCount = countSkipped(result.targets);
   const skippedNote = skippedCount > 0 ? ` [${skippedCount} target(s) skipped]` : '';
+  if (result.dryRun) {
+    for (const warning of result.warnings ?? []) {
+      lines.push(`⚠ ${warning}\n`);
+    }
+  }
   lines.push(`----------------------------------------`);
   if (result.dryRun) {
+    const warningCount = countWarnings(result.targets) + (result.warnings?.length ?? 0);
     lines.push(
-      `Overall: DRY RUN OK, the setup is valid${skippedNote} (${countWarnings(result.targets)} warning(s), ${result.totalDurationMs}ms)`
+      `Overall: DRY RUN OK, the setup is valid${skippedNote} (${warningCount} warning(s), ${result.totalDurationMs}ms)`
     );
     return lines.join('\n');
   }
@@ -137,6 +146,12 @@ export function formatMarkdownReport(result: OverallCheckResult): string {
     );
   }
 
+  if (result.dryRun) {
+    for (const warning of result.warnings ?? []) {
+      lines.push(`\n> ⚠️ ${warning}`);
+    }
+  }
+
   lines.push('\n<details><summary>Detailed Target Breakdown</summary>\n');
 
   for (const target of result.targets) {
@@ -157,6 +172,10 @@ export function formatMarkdownReport(result: OverallCheckResult): string {
       }
       lines.push('');
       continue;
+    }
+
+    if (target.model) {
+      lines.push(`Model: \`${target.model}\`\n`);
     }
 
     lines.push('| Rubric | Type | Outcome | Status |');

@@ -3,8 +3,10 @@ import { type ExtractedCodeContext, extractCodeContext } from '../context/code-e
 import type { GitDiffOptions } from '../context/types.js';
 import {
   createJevEvaluator,
+  isModelAlias,
   type JevEvaluator,
   MockJevEvaluator,
+  resolveModel,
 } from '../evaluator/jev-evaluator.js';
 import { loadSpec } from '../parser/markdown-parser.js';
 import type {
@@ -75,6 +77,20 @@ function planWarnings(
   return warnings;
 }
 
+/** Dry-run warnings about the setup as a whole rather than about one target. */
+function setupWarnings(config: JevSpecConfig): string[] {
+  if (config.client?.mock) {
+    return [];
+  }
+  const model = resolveModel(config.client);
+  if (!isModelAlias(model)) {
+    return [];
+  }
+  return [
+    `the model is not pinned: "${model}" is an alias that moves to a newer model with every release, so a result can change without any change in this repository. Set client.model (or TYPESAFE_DEFAULT_MODEL) to a versioned ID; every report prints the one that answered`,
+  ];
+}
+
 export async function runChecks(
   config: JevSpecConfig,
   options: RunOptions = {}
@@ -92,6 +108,7 @@ export async function runChecks(
     : Boolean(config.client?.mock);
 
   const targetNames = options.target ? [options.target] : Object.keys(config.targets);
+  const runWarnings = options.dryRun ? setupWarnings(config) : [];
 
   const targetResults: TargetCheckResult[] = [];
 
@@ -157,7 +174,7 @@ export async function runChecks(
       continue;
     }
 
-    const rubricResults = await getEvaluator().evaluate({
+    const { answers: rubricResults, model } = await getEvaluator().evaluate({
       specContext: parsedSpec.filteredText,
       codeContext: codeContext.combinedPromptContext,
       rubrics: targetConfig.rubrics,
@@ -199,6 +216,7 @@ export async function runChecks(
       evaluations,
       durationMs: targetDuration,
       estimatedCostUsd: estCost,
+      ...(model && { model }),
     });
   }
 
@@ -208,6 +226,7 @@ export async function runChecks(
 
   return {
     ...(options.dryRun ? { dryRun: true } : isMock && { mock: true }),
+    ...(options.dryRun && runWarnings.length > 0 && { warnings: runWarnings }),
     passed: overallPassed,
     targets: targetResults,
     totalDurationMs: totalDuration,
