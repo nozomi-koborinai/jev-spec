@@ -319,7 +319,7 @@ export default defineConfig({
 检查配置文件中声明的所有目标：
 
 ```bash
-# 使用 Bun 快速检查
+# 使用 Bun 检查
 bunx jev-spec check
 
 # 使用 Node.js 检查
@@ -397,19 +397,19 @@ npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
 `jev-spec` 为现代 **Node.js** 与 **Bun** 提供一流的双运行时支持。所有 Pull Request 都会在自动化 CI 中针对所有支持的版本进行严格测试。
 
-| 运行时环境 | 支持版本 | 支持层级 | 推荐适用场景 | 典型冷启动耗时 |
-| :--- | :--- | :--- | :--- | :--- |
-| **Bun** | `>= 1.2`（最新） | Tier 1 / 完全支持 | 极速 pre-commit 钩子、暂存区检查、本地开发循环 | **< 100ms** |
-| **Node.js** | `>= 22.0.0`（LTS 22） | Tier 1 / 完全支持 | 标准生产级 CI/CD 流水线、容器化构建环境 | 约 350ms – 500ms |
-| **Node.js** | `>= 24.0.0`（Current 24） | Tier 1 / 完全支持 | 前沿 Node 运行时与实验性环境 | 约 350ms – 500ms |
+| 运行时环境 | 支持版本 | 支持层级 | 推荐适用场景 |
+| :--- | :--- | :--- | :--- |
+| **Bun** | `>= 1.2`（最新） | Tier 1 / 完全支持 | pre-commit 钩子、本地开发循环 |
+| **Node.js** | `>= 22.0.0`（LTS 22） | Tier 1 / 完全支持 | CI/CD 流水线、容器化构建环境 |
+| **Node.js** | `>= 24.0.0`（Current 24） | Tier 1 / 完全支持 | 当前版本的 Node 运行时环境 |
 
-### 为什么推荐使用 Bun 运行 Pre-Commit 钩子？
+### Pre-Commit 钩子该用哪个运行时？
 
-由于 Jev 评估决策耗时仅在 **亚秒级（70ms 至 400ms）**，本地开发流程中耗时占比最高的部分实际上是运行时的启动开销：
+都可以。以下是在维护者的笔记本电脑上针对本仓库实测的数据（Node 22.23、Bun 1.4）：CLI 在 Node 上启动约 0.1 秒，在 Bun 上约 0.05 秒；对全部 8 个目标执行 Dry Run 分别耗时 0.15 秒和 0.08 秒。对一个目标进行在线检查需要 0.3 到 0.9 秒，因此决定钩子耗时的是发往模型的请求，而不是运行时：
 
-- **毫秒级启动**：`bunx jev-spec check --staged` 启动耗时 **低于 100ms**，比传统运行时快 3 倍以上。
-- **无感 Git 钩子**：开发者仅需不到半秒钟即可完成对暂存区修改的完整语义断言。
-- **原生 TypeScript 执行**：直接读取执行 `jev-spec.config.ts`，无需任何转译额外耗时。
+- **钩子的开销**：`jev-spec check --staged` 只检查本次提交触及的目标，每个目标一次请求。没有触及任何目标的提交不会发送任何内容，也不需要 API Key。
+- **`bunx` 默认使用 Node**：CLI 带有 `#!/usr/bin/env node` shebang，`bunx jev-spec` 会遵循它。要在 Bun 上运行，请使用 `bunx --bun jev-spec`。
+- **TypeScript 配置**：两种运行时都可以直接加载 `jev-spec.config.ts`。
 
 ---
 
