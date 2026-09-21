@@ -1,0 +1,13 @@
+diff --git a/src/runner/assertion-runner.ts b/src/runner/assertion-runner.ts
+index a929bd9..252ee10 100644
+--- a/src/runner/assertion-runner.ts
++++ b/src/runner/assertion-runner.ts
+@@ -22,7 +22,7 @@ export function assertRubric(
+       rubricName,
+       rubric,
+       result,
+-      passed: true,
++      passed: false,
+     };
+   }
+ 

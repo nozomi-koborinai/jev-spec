@@ -1,0 +1,18 @@
+diff --git a/src/context/path-security.ts b/src/context/path-security.ts
+index b2ef181..fdf8f12 100644
+--- a/src/context/path-security.ts
++++ b/src/context/path-security.ts
+@@ -30,13 +30,6 @@ export function validateGlobPattern(pattern: string): void {
+   if (normalized.startsWith('/')) {
+     throw new PathSecurityError(`Glob pattern must be relative to project root: "${pattern}"`);
+   }
+-
+-  const segments = normalized.split('/');
+-  for (const segment of segments) {
+-    if (segment === '..') {
+-      throw new PathSecurityError(`Glob pattern must not contain ".." segments: "${pattern}"`);
+-    }
+-  }
+ }
+ 
+ /**

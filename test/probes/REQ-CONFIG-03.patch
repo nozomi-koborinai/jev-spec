@@ -1,0 +1,16 @@
+diff --git a/src/config-validation.ts b/src/config-validation.ts
+index 66275dc..6deccfe 100644
+--- a/src/config-validation.ts
++++ b/src/config-validation.ts
+@@ -136,11 +136,6 @@ function validateAssertion(
+   const keys = Object.keys(assertion).filter((key) => assertion[key] !== undefined);
+ 
+   const unknownKeys = keys.filter((key) => !allowed.includes(key));
+-  for (const key of unknownKeys) {
+-    issues.push(
+-      `${path}.${key}: not a valid option for a ${rubricType} rubric (valid options: ${allowed.join(', ')})`
+-    );
+-  }
+ 
+   if (keys.length === 0) {
+     issues.push(

@@ -1,0 +1,13 @@
+diff --git a/src/context/glob-matcher.ts b/src/context/glob-matcher.ts
+index 6e6fb64..971ab5c 100644
+--- a/src/context/glob-matcher.ts
++++ b/src/context/glob-matcher.ts
+@@ -38,7 +38,7 @@ export async function resolveGlobPatterns(
+     onlyFiles: true,
+     dot: false,
+     unique: true,
+-    followSymbolicLinks: false,
++    followSymbolicLinks: true,
+   });
+ 
+   const safeMatches: string[] = [];

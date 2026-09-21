@@ -1,0 +1,17 @@
+diff --git a/src/context/path-security.ts b/src/context/path-security.ts
+index b2ef181..e9b8efb 100644
+--- a/src/context/path-security.ts
++++ b/src/context/path-security.ts
+@@ -85,12 +85,6 @@ export async function assertInsideRoot(root: string, targetPath: string): Promis
+   const relative = path.relative(canonicalRoot, canonicalTarget);
+   const isInside = relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+ 
+-  if (!isInside) {
+-    throw new PathSecurityError(
+-      `Path "${targetPath}" resolves outside project root "${resolvedRoot}"`
+-    );
+-  }
+-
+   return canonicalTarget;
+ }
+ 

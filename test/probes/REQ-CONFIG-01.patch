@@ -1,0 +1,13 @@
+diff --git a/src/config-validation.ts b/src/config-validation.ts
+index 66275dc..1dd0c81 100644
+--- a/src/config-validation.ts
++++ b/src/config-validation.ts
+@@ -241,7 +241,7 @@ export function validateConfig(config: JevSpecConfig): void {
+ 
+   const targets: unknown = (config as { targets?: unknown } | null | undefined)?.targets;
+ 
+-  if (!isRecord(targets) || Object.keys(targets).length === 0) {
++  if (!isRecord(targets)) {
+     issues.push('targets: must declare at least one target');
+   } else {
+     for (const [name, target] of Object.entries(targets)) {

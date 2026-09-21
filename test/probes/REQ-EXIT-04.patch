@@ -1,0 +1,13 @@
+diff --git a/src/cli/main.ts b/src/cli/main.ts
+index 67780dd..1a8615d 100644
+--- a/src/cli/main.ts
++++ b/src/cli/main.ts
+@@ -11,7 +11,7 @@ export async function main(argv: readonly string[]): Promise<number> {
+ 
+     if (parsed.kind === 'help') {
+       console.log(USAGE);
+-      return 0;
++      return 1;
+     }
+ 
+     if (parsed.kind === 'version') {
