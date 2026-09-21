@@ -27,6 +27,13 @@ export interface ParsedSpec {
 
 const DEFAULT_REQUIREMENT_PREFIXES = ['REQ-', 'AC-'];
 
+export class SpecFilterError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SpecFilterError';
+  }
+}
+
 /**
  * Builds regex patterns for requirement ID extraction.
  */
@@ -248,31 +255,58 @@ function sectionMatchesHeadings(section: SpecSectionNode, headings?: readonly st
 
 function sectionMatchesRequirementPrefix(
   section: SpecSectionNode,
-  prefixes: readonly string[]
+  requirementPrefix?: string
 ): boolean {
-  if (prefixes.length === DEFAULT_REQUIREMENT_PREFIXES.length) {
+  if (!requirementPrefix) {
     return true;
   }
-  return section.requirementIds.some((id) =>
-    prefixes.some((prefix) => id.toUpperCase().startsWith(prefix.toUpperCase()))
+  const wanted = requirementPrefix.toUpperCase();
+  return section.requirementIds.some((id) => id.toUpperCase().startsWith(wanted));
+}
+
+function hasActiveFilter(filter?: SpecFilter): boolean {
+  return Boolean(
+    filter &&
+      ((filter.headings && filter.headings.length > 0) ||
+        (filter.tags && filter.tags.length > 0) ||
+        filter.requirementPrefix)
   );
 }
 
 /**
  * Applies spec filters including headings, tags, and requirement prefixes.
+ * A section that matches every active filter is kept together with its nested subsections.
  */
 export function filterSections(
   sections: readonly SpecSectionNode[],
   filter?: SpecFilter
 ): SpecSectionNode[] {
-  const prefixes = resolveRequirementPrefixes(filter);
+  if (!hasActiveFilter(filter)) {
+    return [...sections];
+  }
 
-  return sections.filter(
-    (section) =>
+  const kept: SpecSectionNode[] = [];
+  let matchedAncestorLevel: number | null = null;
+
+  for (const section of sections) {
+    if (matchedAncestorLevel !== null && section.level > matchedAncestorLevel) {
+      kept.push(section);
+      continue;
+    }
+
+    matchedAncestorLevel = null;
+
+    if (
       sectionMatchesHeadings(section, filter?.headings) &&
       sectionMatchesTags(section, filter?.tags) &&
-      sectionMatchesRequirementPrefix(section, prefixes)
-  );
+      sectionMatchesRequirementPrefix(section, filter?.requirementPrefix)
+    ) {
+      kept.push(section);
+      matchedAncestorLevel = section.level;
+    }
+  }
+
+  return kept;
 }
 
 /**
@@ -289,6 +323,14 @@ export async function loadSpec(
   const tree = parseMarkdownAst(rawContent);
   const allSections = buildSectionsFromAst(tree, prefixes);
   const filteredSections = filterSections(allSections, filter);
+
+  if (hasActiveFilter(filter) && filteredSections.length === 0) {
+    throw new SpecFilterError(
+      `specFilter ${JSON.stringify(filter)} matched no section in "${filePath}". ` +
+        'Check the headings, tags, or requirementPrefix for typos.'
+    );
+  }
+
   const requirements = filteredSections.flatMap((section) => section.requirements);
 
   const filteredText =
