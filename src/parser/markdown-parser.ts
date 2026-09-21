@@ -1,5 +1,4 @@
 import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import type { Heading, PhrasingContent, Root } from 'mdast';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
@@ -59,8 +58,7 @@ export function extractRequirementIds(
   const matches = new Set<string>();
 
   for (const regex of patterns) {
-    let match: RegExpExecArray | null;
-    while ((match = regex.exec(text)) !== null) {
+    for (const match of text.matchAll(regex)) {
       matches.add(match[1]);
     }
   }
@@ -74,8 +72,7 @@ export function extractRequirementIds(
 export function extractTags(text: string): string[] {
   const tags = new Set<string>();
   const tagRegex = /(?:^|\s)#([a-zA-Z][\w-]*)/g;
-  let match: RegExpExecArray | null;
-  while ((match = tagRegex.exec(text)) !== null) {
+  for (const match of text.matchAll(tagRegex)) {
     tags.add(match[1].toLowerCase());
   }
   return Array.from(tags);
@@ -129,23 +126,25 @@ export function buildSectionsFromAst(tree: Root, prefixes: readonly string[]): S
   let currentStartLine: number | undefined;
 
   const flush = (): void => {
-    if (currentTitle === null) {
+    // A local constant keeps the non-null narrowing inside the callback below.
+    const title = currentTitle;
+    if (title === null) {
       return;
     }
 
     const content = currentBlocks.join('\n\n').trim();
-    const requirementIds = extractRequirementIds(`${currentTitle}\n${content}`, prefixes);
-    const tags = extractTags(`${currentTitle}\n${content}`);
+    const requirementIds = extractRequirementIds(`${title}\n${content}`, prefixes);
+    const tags = extractTags(`${title}\n${content}`);
     const requirements = requirementIds.map((id) => ({
       id,
       prefix: detectRequirementPrefix(id, prefixes),
-      title: currentTitle!,
+      title,
       content,
       tags,
     }));
 
     sections.push({
-      title: currentTitle,
+      title,
       level: currentLevel,
       content,
       requirementIds,

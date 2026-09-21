@@ -32,31 +32,39 @@ export async function captureConsole<T>(fn: () => Promise<T>): Promise<CapturedC
     console.error = originalError;
   }
 }
-export const expect = (actual: any) => ({
-  toBe: (expected: any) => assert.strictEqual(actual, expected),
-  toEqual: (expected: any) => assert.deepStrictEqual(actual, expected),
+
+/** Minimal Jest-style assertions on top of node:assert, shared by every test file. */
+export const expect = (actual: unknown) => ({
+  toBe: (expected: unknown) => assert.strictEqual(actual, expected),
+  toEqual: (expected: unknown) => assert.deepStrictEqual(actual, expected),
   toBeDefined: () => assert.notStrictEqual(actual, undefined),
-  toHaveLength: (len: number) => assert.strictEqual(actual.length, len),
-  toContain: (item: any) => {
+  toHaveLength: (len: number) => assert.strictEqual((actual as { length: number }).length, len),
+  toContain: (item: unknown) => {
     if (typeof actual === 'string') {
-      assert.ok(actual.includes(item), `Expected "${actual}" to contain "${item}"`);
+      assert.ok(
+        typeof item === 'string' && actual.includes(item),
+        `Expected "${actual}" to contain "${item}"`
+      );
     } else if (Array.isArray(actual)) {
       assert.ok(actual.includes(item), `Expected array to contain ${item}`);
     } else {
       assert.ok(false, 'Unsupported type for toContain');
     }
   },
-  toBeGreaterThan: (num: number) => assert.ok(actual > num, `Expected ${actual} > ${num}`),
-  toBeGreaterThanOrEqual: (num: number) => assert.ok(actual >= num, `Expected ${actual} >= ${num}`),
-  toBeInstanceOf: (ctor: new (...args: any[]) => any) =>
+  toBeGreaterThan: (num: number) =>
+    assert.ok((actual as number) > num, `Expected ${actual} > ${num}`),
+  toBeGreaterThanOrEqual: (num: number) =>
+    assert.ok((actual as number) >= num, `Expected ${actual} >= ${num}`),
+  toBeInstanceOf: (ctor: abstract new (...args: never[]) => unknown) =>
     assert.ok(actual instanceof ctor, `Expected value to be instance of ${ctor.name}`),
   toThrow: (pattern?: RegExp | string) => {
+    const fn = actual as () => unknown;
     if (pattern instanceof RegExp) {
-      assert.throws(actual, pattern);
+      assert.throws(fn, pattern);
     } else if (typeof pattern === 'string') {
-      assert.throws(actual, new RegExp(pattern));
+      assert.throws(fn, new RegExp(pattern));
     } else {
-      assert.throws(actual);
+      assert.throws(fn);
     }
   },
 });

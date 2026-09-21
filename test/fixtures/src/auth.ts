@@ -8,7 +8,7 @@ export class SessionService {
   private revokedTokens = new Set<string>();
 
   verifyToken(token: string): SessionPayload | null {
-    if (!token || !token.startsWith('valid-sig-')) {
+    if (!token?.startsWith('valid-sig-')) {
       return null;
     }
     const tokenId = token.replace('valid-sig-', '');

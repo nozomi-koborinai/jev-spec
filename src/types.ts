@@ -22,7 +22,7 @@ export interface ScoreRubric {
   readonly levels: readonly string[];
 }
 
-export type AnyRubric = NoulRubric | ChoiceRubric<any> | ScoreRubric;
+export type AnyRubric = NoulRubric | ChoiceRubric | ScoreRubric;
 
 // Assertions
 export interface NoulAssertion {
@@ -42,7 +42,7 @@ export interface ScoreAssertion {
   readonly minConfidence?: number;
 }
 
-export type AnyAssertion = NoulAssertion | ChoiceAssertion<any> | ScoreAssertion;
+export type AnyAssertion = NoulAssertion | ChoiceAssertion | ScoreAssertion;
 
 export type AssertionMap<R extends Record<string, AnyRubric>> = {
   [K in keyof R]?: R[K] extends NoulRubric
@@ -71,6 +71,15 @@ export interface ZoneConfig<R extends Record<string, AnyRubric> = Record<string,
   readonly assertions: AssertionMap<R>;
 }
 
+/**
+ * A zone as the engine sees it: rubric names are not tracked at the type level, so every
+ * `ZoneConfig<R>` fits, as do hand-written configurations that never went through defineConfig.
+ */
+export interface AnyZoneConfig extends Omit<ZoneConfig, 'rubrics' | 'assertions'> {
+  readonly rubrics: Readonly<Record<string, AnyRubric>>;
+  readonly assertions: Readonly<Record<string, AnyAssertion | undefined>>;
+}
+
 // Client Configuration
 export interface JevClientConfig {
   readonly apiKey?: string;
@@ -83,7 +92,7 @@ export interface JevClientConfig {
 // Top-level Configuration
 export interface JevSpecConfig {
   readonly client?: JevClientConfig;
-  readonly zones: Record<string, ZoneConfig<any>>;
+  readonly zones: Record<string, AnyZoneConfig>;
 }
 
 // Evaluation Results
@@ -108,7 +117,7 @@ export interface ScoreResult {
   readonly levelProbabilities: readonly number[];
 }
 
-export type AnyRubricResult = NoulResult | ChoiceResult<any> | ScoreResult;
+export type AnyRubricResult = NoulResult | ChoiceResult | ScoreResult;
 
 export interface AssertionEvaluation {
   readonly rubricName: string;

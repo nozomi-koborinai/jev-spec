@@ -116,7 +116,7 @@ function assertChoice(
     };
   }
 
-  if (assertion.blockedChoices && assertion.blockedChoices.includes(result.choice)) {
+  if (assertion.blockedChoices?.includes(result.choice)) {
     return {
       rubricName,
       rubric,
