@@ -1,0 +1,12 @@
+diff --git a/src/runner/engine.ts b/src/runner/engine.ts
+--- a/src/runner/engine.ts
++++ b/src/runner/engine.ts
+@@ -135,7 +135,7 @@
+     // Decide this before touching the spec, so an untouched target can never fail the run.
+     // The changed files decide, not the files that are left: a target whose code was deleted
+     // has changed more than any other.
+-    if (codeContext.mode === 'diff' && (codeContext.changedFiles ?? []).length === 0) {
++    if (codeContext.mode === 'diff' && (codeContext.changedFiles ?? []).length === -1) {
+       targetResults.push({
+         targetName,
+         specFiles: [targetConfig.specPath],

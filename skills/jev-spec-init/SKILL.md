@@ -186,7 +186,7 @@ jobs:
         run: npx jev-spec check --dry-run
 ```
 
-- CI runs the **full** check on purpose. `--diff origin/main...HEAD` sends only diff hunks, which is too little context for "is this requirement satisfied?", and it skips a pull request that changes only the specification. A full check costs cents. Use `--diff` (it needs `fetch-depth: 0`) only when the repo is too large for that.
+- CI runs the **full** check on purpose. `--diff origin/main...HEAD` checks only the targets whose code changed, so it skips a pull request that changes only the specification. (Before jev-spec 0.3.0 it also sent nothing but the changed hunks, which failed rubrics whose subject lay outside them.) A full check costs cents. Use `--diff` (it needs `fetch-depth: 0`) only when the repo is too large for that.
 - The fork step is a dry run: it fails only when the setup is broken. On jev-spec 0.1.x, which has no `--dry-run`, use `npx jev-spec check --mock || [ "$?" -eq 1 ]` instead: it accepts exit codes 0 and 1 and still fails on 2, which is the mock-mode contract from step 5.
 - `--output` only accepts paths inside the repository. For the step summary, redirect stdout as shown.
 - Until the `TYPESAFE_AI_API_KEY` secret exists, the verify step fails with "API key is required". Tell the user to add the secret first, or to merge the workflow once they have the key. Do not paper over it with `--mock`.

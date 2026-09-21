@@ -39,7 +39,7 @@ Because `jev-spec` operates inside developer environments and CI/CD pipelines wh
 | **CLI Invocation** | Trusted | Flags passed by the developer or workflow runner (`--target`, `--config`, etc.). |
 | **Configuration File** | High Privilege | `jev-spec.config.ts` is executable TypeScript/JavaScript. In CI, it must originate from trusted branches or require maintainer review. |
 | **API Credentials** | Confidential | `TYPESAFE_AI_API_KEY` must never be leaked, committed, or exposed to unreviewed pull requests. |
-| **Source Code & Git Diffs** | Untrusted | In pull request evaluation, source files and diff hunks may contain malicious payloads, symlinks, or prompt injections. |
+| **Source Code & Git Diffs** | Untrusted | In pull request evaluation, source files and the paths named by a diff may contain malicious payloads, symlinks, or prompt injections. |
 | **Specifications (Markdown)** | Untrusted / Semi-Trusted | Specifications may originate from external contributors and could contain adversarial formatting or text. |
 
 ---

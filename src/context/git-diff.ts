@@ -7,6 +7,42 @@ const execFileAsync = promisify(execFile);
 
 const DEFAULT_CONTEXT_LINES = 3;
 
+/** Paths of every file in the git index, relative to `cwd`. */
+export async function listStagedFiles(cwd: string = process.cwd()): Promise<string[]> {
+  const { stdout } = await execFileAsync('git', ['ls-files', '--cached', '-z'], {
+    cwd,
+    maxBuffer: 10 * 1024 * 1024,
+    encoding: 'utf-8',
+    timeout: GIT_DIFF_TIMEOUT_MS,
+  });
+  return stdout.split('\0').filter(Boolean);
+}
+
+/**
+ * Content of a file as it is staged, or `null` when it is larger than `maxBytes`. The path goes
+ * to git as one argument behind a colon, so it can be read neither as an option nor by a shell.
+ */
+export async function readStagedFile(
+  relativePath: string,
+  cwd: string,
+  maxBytes: number
+): Promise<string | null> {
+  try {
+    const { stdout } = await execFileAsync('git', ['show', `:${relativePath}`], {
+      cwd,
+      maxBuffer: maxBytes,
+      encoding: 'utf-8',
+      timeout: GIT_DIFF_TIMEOUT_MS,
+    });
+    return stdout;
+  } catch (error: unknown) {
+    if ((error as { code?: string }).code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER') {
+      return null;
+    }
+    throw error;
+  }
+}
+
 /**
  * Runs git diff and returns parsed file hunks.
  */

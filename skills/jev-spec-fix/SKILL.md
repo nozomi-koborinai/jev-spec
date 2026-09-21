@@ -60,7 +60,7 @@ A file in A but not in B has **no target**. An ID in C but not in D has **no rub
 
 ### 2. For each failed rubric, find the cause
 
-Read the rubric's question, the requirement it names in the specification, and the code in the target's `codePaths`. A failed check in `--staged` or `--diff` mode was judged on diff hunks only: re-run the target without that flag before concluding anything.
+Read the rubric's question, the requirement it names in the specification, and the code in the target's `codePaths`. Before jev-spec 0.3.0, a failed check in `--staged` or `--diff` mode was judged on the changed hunks only: on those versions, re-run the target without that flag before concluding anything. From 0.3.0 on, a diff run checks a touched target in full.
 
 | Cause | How to recognise it | What to do |
 | :-- | :-- | :-- |

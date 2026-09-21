@@ -25,6 +25,5 @@ export interface GitDiffResult {
 export interface CodeExtractionOptions {
   readonly cwd?: string;
   readonly gitDiff?: GitDiffOptions;
-  readonly contextLines?: number;
   readonly maxTotalChars?: number;
 }

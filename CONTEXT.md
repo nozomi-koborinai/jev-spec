@@ -80,7 +80,7 @@ _Avoid_: Execution, job, verification
 A run that sends all the code of each target.
 
 **Diff run**:
-A run limited to changed code: only the changed hunks are sent to the model.
+A run limited to the targets whose code changed. The diff chooses the targets; each chosen target is checked in full.
 _Avoid_: Diff mode, staged mode
 
 **Skipped**:

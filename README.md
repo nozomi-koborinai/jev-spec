@@ -69,12 +69,12 @@ You can put these questions to a general-purpose LLM in a prompt. Then you parse
 - **Ask narrow, literal questions.** One behaviour per question, asked directly ("Is a token rejected when …?"), and say which part of the code you mean when two are alike. A requirement restated as a claim, multi-part questions, counting and stacked negations are answered less reliably.
 - **English works best.** Jev's [primary training language is English](https://docs.typesafe.ai/models#language-support). Other languages, CJK scripts included, are accepted but less accurate, and TypeSafe advises testing on your own content first. With specs in another language, tune the thresholds on your own documents before you gate on them.
 - **Markdown tables in a specification are not sent to the model yet.** Restate the rows in the question, or write the requirement as a list.
-- **`--staged` and `--diff` send only the changed hunks.** That is less context than the full files: good for fast feedback, while a full check sees everything.
+- **`--staged` and `--diff` choose the targets, not what the model sees.** A target none of whose files changed is skipped, and a touched target is checked in full. `--staged` reads what is staged, not the working tree. A change to a spec alone selects nothing, so keep a full run in CI.
 - **Real checks need a [TypeSafe API key](https://console.typesafe.ai/keys).** `jev-spec check --dry-run` validates your setup without one.
 
 ### jev-spec checks itself
 
-jev-spec has specs of its own and is checked against them. [`docs/specs/`](docs/specs) states the requirements, [`jev-spec.config.ts`](jev-spec.config.ts) pairs each group with the one to three files that implement it, and [`test/probes/`](test/probes) holds, for every requirement, a patch that breaks it on purpose. A rubric belongs in the gate only when it passes on the intact code and fails on the broken copy. [`docs/probe-results.md`](docs/probe-results.md) records the latest run: 18 of 18 probes caught with `jev-1.13.0`. A full check of the 6 targets and 18 rubrics takes under three seconds and costs an estimated $0.0004. The first run did not look like that: the questions, not the thresholds, were what had to change, and what we learned is in the header of the configuration.
+jev-spec has specs of its own and is checked against them. [`docs/specs/`](docs/specs) states the requirements, [`jev-spec.config.ts`](jev-spec.config.ts) pairs each group with the one to three files that implement it, and [`test/probes/`](test/probes) holds, for every requirement, a patch that breaks it on purpose. A rubric belongs in the gate only when it passes on the intact code and fails on the broken copy. [`docs/probe-results.md`](docs/probe-results.md) records the latest run: 22 of 22 probes caught with `jev-1.13.0`. A full check of the 8 targets and 22 rubrics takes under four seconds and costs an estimated $0.0006. The first run did not look like that: the questions, not the thresholds, were what had to change, and what we learned is in the header of the configuration.
 
 ### Architecture Overview
 
@@ -84,7 +84,7 @@ Specification (Markdown) ─────────┐
 Implementation (Code / Git Diff) ─┘   (Root Jail + Boundary Isolation)                          (exit code 0 / 1 / 2)
 ```
 
-1. **Context Extraction**: Parses markdown specifications using `mdast` (filtering by heading, tag, or requirement ID) and extracts source files or staged git diff hunks.
+1. **Context Extraction**: Parses markdown specifications using `mdast` (filtering by heading, tag, or requirement ID) and reads the source files of every target; in a diff run, only of the targets that the change touches.
 2. **Security Isolation**: Enforces workspace root jails, symlink escape checks, git revision argument sanitization, and delimiting tags around the untrusted text sent to the model (a mitigation, not a guarantee).
 3. **One Request per Target**: Sends the specification, the code and every rubric of a target to Jev in a single request.
 4. **Assertion Evaluation**: Compares the returned probabilities and scores with your thresholds and exits with `0`, `1` or `2`.
@@ -335,7 +335,7 @@ bunx jev-spec check --target auth
 
 #### Diff Runs (Pre-commit Hooks & CI)
 
-Check the changed lines instead of entire source files:
+Check only the targets whose code changed. Each of them is checked in full:
 
 ```bash
 # Check staged git changes (ideal for pre-commit git hooks)
