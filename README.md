@@ -64,9 +64,10 @@ You can put these questions to a general-purpose LLM in a prompt. Then you parse
 
 ### Know the limits
 
-- **A probability is not a proof.** jev-spec tells you that code has probably drifted from a requirement. It complements tests and review and replaces neither. Calibrate the thresholds on your own code before you trust them.
+- **A probability is not a proof.** jev-spec tells you that code has probably drifted from a requirement. It complements tests and review and replaces neither. Tune the thresholds on your own code before you trust them.
 - **Keep targets small.** A target is sent in one request. Make it one domain, not the whole `src/` tree: Jev gets less accurate as unrelated content grows (see its [known limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13)).
 - **Ask narrow questions.** One requirement per question. Multi-part questions, counting and stacked negations are answered less reliably.
+- **English works best.** Jev's [primary training language is English](https://docs.typesafe.ai/models#language-support). Other languages, CJK scripts included, are accepted but less accurate, and TypeSafe advises testing on your own content first. With specs in another language, tune the thresholds on your own documents before you gate on them.
 - **Markdown tables in a specification are not sent to the model yet.** Restate the rows in the question, or write the requirement as a list.
 - **`--staged` and `--diff` send only the changed hunks.** That is less context than the full files: good for fast feedback, while a full check sees everything.
 - **Real checks need a [TypeSafe API key](https://console.typesafe.ai/keys).** `jev-spec check --dry-run` validates your setup without one.
@@ -80,7 +81,7 @@ Implementation (Code / Git Diff) ─┘   (Root Jail + Boundary Isolation)      
 ```
 
 1. **Context Extraction**: Parses markdown specifications using `mdast` (filtering by heading, tag, or requirement ID) and extracts source files or staged git diff hunks.
-2. **Security Isolation**: Enforces workspace root jails, symlink escape checks, git revision argument sanitization, and anti-prompt-injection boundary tagging.
+2. **Security Isolation**: Enforces workspace root jails, symlink escape checks, git revision argument sanitization, and delimiting tags around the untrusted text sent to the model (a mitigation, not a guarantee).
 3. **One Request per Target**: Sends the specification, the code and every rubric of a target to Jev in a single request.
 4. **Assertion Evaluation**: Compares the returned probabilities and scores with your thresholds and exits with `0`, `1` or `2`.
 
@@ -482,11 +483,11 @@ The push step is a full run on purpose: on `main`, `origin/main...HEAD` is an em
 
 `jev-spec` implements comprehensive defensive security controls (Hardening S-01 through S-05) protecting developer machines and CI runners:
 
-| Security Control | Implementation Guarantee |
+| Security Control | What It Does |
 | :--- | :--- |
 | **Path Traversal & Root Jail** | Workspace paths are strictly validated using realpath resolution (`assertInsideRoot()`). Absolute paths outside cwd, `..` directory traversal, and symlinks escaping the repository root are rejected. |
 | **Git Revision Sanitization** | Arguments passed to `--diff` are validated against strict git revision patterns (`assertGitRevision()`). Rejects flags starting with `-` (blocking option injection like `--output`), terminates option parsing with `--end-of-options` before the revision range, and enforces a 15-second command timeout. |
-| **Prompt Boundary Protection** | Untrusted specification and implementation contents are isolated within delimited tags (`<specification_context>` and `<untrusted_source_code>`) accompanied by strict anti-prompt-injection framing instructing Jev to disregard instructions embedded within source files. |
+| **Prompt Boundaries (best effort)** | The specification and the code are sent in separate fields, inside delimiting tags (`<specification_context>` and `<untrusted_source_code>`), with a note that asks the model to ignore instructions embedded in them. This is a mitigation, not a guarantee: TypeSafe documents that content written to steer the model, including text that argues for its own classification, [can move the answer](https://docs.typesafe.ai/model-jaggedness/jev-1.13#adversarial-content). A comment that claims compliance is such text, so treat a pass on code you do not trust as weak evidence. |
 | **Base URL SSRF Protection** | By default, requests are routed exclusively to official TypeSafe AI endpoints (`https://api.typesafe.ai`). Custom API base URLs are blocked unless `allowCustomBaseUrl: true` is explicitly configured. |
 | **Resource Bounds** | Prevents denial-of-service and runaway memory consumption by enforcing strict limits: max 500 files per scan, 2MB file size cap, and bounded character truncation per evaluation prompt. |
 
