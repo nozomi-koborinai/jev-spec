@@ -24,7 +24,9 @@ A probability threshold or a confidence threshold outside the range from 0 to 1 
 
 Validation collects every problem it finds and reports them together, each with the path of the offending entry in the configuration.
 
-### REQ-CONFIG-06: A run validates the configuration first
+## Runs
+
+### REQ-RUN-01: A run validates the configuration first
 
 A run validates the configuration before it reads a spec, reads code or creates the client of the API.
 
@@ -34,10 +36,6 @@ A run validates the configuration before it reads a spec, reads code or creates 
 
 When the probability, the confidence or the score of an answer is not a finite number, the assertion on that answer fails.
 
-### REQ-ANSWER-02: A missing answer fails the check
-
-When the evaluator returns no answer for a rubric, the check of that target fails.
-
 ### REQ-ANSWER-03: A rubric without an assertion is informational
 
-A rubric that has no assertion is reported with its answer and does not affect whether the check passes.
+A rubric that has no assertion does not affect whether the check passes.

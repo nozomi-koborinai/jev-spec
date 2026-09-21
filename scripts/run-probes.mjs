@@ -79,7 +79,8 @@ function answersByRequirement(report) {
   for (const target of report.targets) {
     for (const evaluation of target.evaluations) {
       const text = evaluation.rubric.question ?? evaluation.rubric.description ?? '';
-      const id = REQUIREMENT_ID.exec(text)?.[0];
+      // A rubric names its requirement in its name (preferred) or in its text.
+      const id = REQUIREMENT_ID.exec(`${evaluation.rubricName}\n${text}`)?.[0];
       if (id) {
         byRequirement.set(id, {
           target: target.targetName,
@@ -185,6 +186,10 @@ async function main() {
     cwd: repoRoot,
     encoding: 'utf-8',
   });
+  const { stdout: dirty } = await execFileAsync('git', ['status', '--porcelain'], {
+    cwd: repoRoot,
+    encoding: 'utf-8',
+  });
   const manifest = JSON.parse(await fs.readFile(path.join(repoRoot, 'package.json'), 'utf-8'));
   const models = [...new Set([...intact.values()].map((entry) => entry.model).filter(Boolean))];
   const caught = rows.filter((row) => row.verdict === 'caught').length;
@@ -198,7 +203,7 @@ async function main() {
     '',
     `- Date: ${new Date().toISOString().slice(0, 10)}`,
     `- Model: ${models.length > 0 ? models.join(', ') : 'none (mock)'}`,
-    `- jev-spec: ${manifest.version} at ${commit.trim()}`,
+    `- jev-spec: ${manifest.version} at ${commit.trim()}${dirty.trim() ? ' plus uncommitted changes' : ''}`,
     `- Caught: ${caught} of ${rows.length}`,
     '',
     '| Requirement | Target | Rubric | Intact | Broken | Result |',

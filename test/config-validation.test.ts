@@ -189,7 +189,7 @@ describe('validateConfig', () => {
 });
 
 describe('runChecks configuration gate', () => {
-  it('REQ-CONFIG-06: refuses to evaluate an invalid configuration', async () => {
+  it('REQ-RUN-01: refuses to evaluate an invalid configuration', async () => {
     const calls: EvaluationInput[] = [];
     const evaluator: JevEvaluator = {
       async evaluate(input): Promise<EvaluationOutput> {
