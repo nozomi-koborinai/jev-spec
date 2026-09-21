@@ -449,8 +449,8 @@ For detailed security disclosures and reporting policies, see [SECURITY.md](./SE
 Contributions are welcome! Please ensure all tests and linter checks pass before submitting a pull request:
 
 ```bash
-npm run check
-npm test
+npm run check      # Biome (lint + format check), typecheck and tests
+npm run lint:fix   # apply Biome formatting and safe lint fixes
 ```
 
 Released under the [MIT License](./LICENSE).
