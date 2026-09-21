@@ -1,9 +1,13 @@
 import { describe, test as it } from 'node:test';
+import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { expect } from './test-utils.js';
 import {
   loadSpec,
+  SpecFilterError,
   parseMarkdownSections,
   extractRequirementIds,
   extractTags,
@@ -65,6 +69,78 @@ REQ-BILL-01 details. #billing
     expect(filtered).toHaveLength(1);
     expect(filtered[0].title).toBe('Authentication');
     expect(filtered[0].requirementIds).toContain('REQ-AUTH-01');
+  });
+
+  it('filters sections by requirementPrefix alone', () => {
+    const tree = parseMarkdownAst(`# Overview
+
+General introduction.
+
+## Authentication
+REQ-AUTH-01 details.
+
+## Billing
+REQ-BILL-01 details.
+`);
+    const sections = buildSectionsFromAst(tree, ['REQ-', 'AC-']);
+    const filtered = filterSections(sections, { requirementPrefix: 'REQ-AUTH-' });
+
+    expect(filtered.map((section) => section.title)).toEqual(['Authentication']);
+  });
+
+  it('keeps nested subsections of a section that matches the filter', () => {
+    const tree = parseMarkdownAst(`# Spec
+
+## REQ-AUTH-01 Token verification
+Verify the signature.
+
+### Error handling
+Return 401 on an invalid signature.
+
+## REQ-BILL-01 Invoices
+Issue monthly invoices.
+
+### Rounding
+Round half up.
+`);
+    const sections = buildSectionsFromAst(tree, ['REQ-', 'AC-']);
+    const filtered = filterSections(sections, { requirementPrefix: 'REQ-AUTH-' });
+
+    expect(filtered.map((section) => section.title)).toEqual([
+      'REQ-AUTH-01 Token verification',
+      'Error handling',
+    ]);
+  });
+
+  it('sends only the matching requirement sections to the evaluator context', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jev-spec-parser-'));
+    try {
+      await fs.writeFile(
+        path.join(dir, 'spec.md'),
+        '# Spec\n\n## REQ-AUTH-01\nVerify tokens.\n\n## REQ-BILL-01\nIssue invoices.\n',
+        'utf-8'
+      );
+      const parsed = await loadSpec('spec.md', dir, { requirementPrefix: 'REQ-AUTH-' });
+
+      expect(parsed.filteredText).toContain('Verify tokens.');
+      expect(parsed.filteredText.includes('Issue invoices.')).toBe(false);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a specFilter that matches no section instead of sending the whole document', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jev-spec-parser-'));
+    try {
+      await fs.writeFile(path.join(dir, 'spec.md'), '# Spec\n\n## REQ-AUTH-01\nVerify tokens.\n', 'utf-8');
+
+      await assert.rejects(
+        () => loadSpec('spec.md', dir, { requirementPrefix: 'REQ-AUHT-' }),
+        SpecFilterError
+      );
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
   });
 
   it('loads and filters spec file from fixture', async () => {

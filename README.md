@@ -256,6 +256,8 @@ export interface ZoneConfig {
 }
 ```
 
+`specFilter` keeps every section that satisfies all of the given criteria, together with its nested subsections, so details written under deeper headings stay part of the requirement. A filter that matches no section is treated as a configuration error (exit code `2`) rather than silently sending the whole document.
+
 ### CLI Usage Reference
 
 #### Check All Zones
