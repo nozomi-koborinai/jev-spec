@@ -449,8 +449,8 @@ push 단계는 의도적으로 전체 검증을 실행합니다. `main`에서는
 기여를 환영합니다! 풀 리퀘스트를 제출하기 전에 모든 테스트와 린터 검사를 통과하는지 확인해 주세요:
 
 ```bash
-npm run check
-npm test
+npm run check      # Biome(린트 및 포맷 검사), 타입 체크, 테스트
+npm run lint:fix   # Biome 포맷팅과 안전한 린트 수정 적용
 ```
 
 이 프로젝트는 [MIT 라이선스](./LICENSE)에 따라 제공됩니다.

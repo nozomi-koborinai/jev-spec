@@ -39,8 +39,10 @@
     "pretest": "npm run build && tsc -p tsconfig.test.json",
     "test": "node --test 'dist-test/test/**/*.test.js'",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
-    "lint": "npm run typecheck",
-    "check": "npm run typecheck && npm test"
+    "lint": "biome check --error-on-warnings .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "check": "npm run lint && npm run typecheck && npm test"
   },
   "keywords": [
     "typesafe-ai",
@@ -56,6 +58,7 @@
     "node": ">=22.0.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.14",
     "@types/micromatch": "^4.0.10",
     "@types/node": "^26.6.2",
     "typescript": "^7.0.0"

@@ -449,8 +449,8 @@ push 時のステップは意図的にフル検証を実行します。`main` �
 コントリビューションを歓迎します。プルリクエストを提出する前に、すべてのテストとリンターチェックが合格することをご確認ください。
 
 ```bash
-npm run check
-npm test
+npm run check      # Biome（リントとフォーマット検査）、型チェック、テスト
+npm run lint:fix   # Biome のフォーマットと安全なリント修正を適用
 ```
 
 [MIT License](./LICENSE) のもとで公開されています。

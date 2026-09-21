@@ -449,8 +449,8 @@ push 步骤有意执行完整校验：在 `main` 分支上 `origin/main...HEAD` 
 欢迎社区贡献！在提交 Pull Request 之前，请确保所有测试用例与检查均顺利通过：
 
 ```bash
-npm run check
-npm test
+npm run check      # Biome（Lint 与格式检查）、类型检查和测试
+npm run lint:fix   # 应用 Biome 的格式化与安全的 Lint 修复
 ```
 
 本项目采用 [MIT 许可证](./LICENSE) 开源。
