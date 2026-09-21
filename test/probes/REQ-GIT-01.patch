@@ -1,0 +1,25 @@
+diff --git a/src/context/git-diff.ts b/src/context/git-diff.ts
+index e574b80..0b573b9 100644
+--- a/src/context/git-diff.ts
++++ b/src/context/git-diff.ts
+@@ -1,9 +1,9 @@
+-import { execFile } from 'node:child_process';
++import { exec } from 'node:child_process';
+ import { promisify } from 'node:util';
+ import { assertGitRevision, GIT_DIFF_TIMEOUT_MS } from './git-revision.js';
+ import type { GitDiffOptions, GitDiffResult, ParsedDiffFile, ParsedDiffHunk } from './types.js';
+ 
+-const execFileAsync = promisify(execFile);
++const execAsync = promisify(exec);
+ 
+ const DEFAULT_CONTEXT_LINES = 3;
+ 
+@@ -27,7 +27,7 @@ export async function extractGitDiff(
+ 
+   let stdout = '';
+   try {
+-    const result = await execFileAsync('git', args, {
++    const result = await execAsync(`git ${args.join(' ')}`, {
+       cwd,
+       maxBuffer: 10 * 1024 * 1024,
+       encoding: 'utf-8',

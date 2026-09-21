@@ -1,0 +1,13 @@
+diff --git a/src/config-validation.ts b/src/config-validation.ts
+index 66275dc..42cbf9d 100644
+--- a/src/config-validation.ts
++++ b/src/config-validation.ts
+@@ -76,7 +76,7 @@ function validateThreshold(
+   if (value === undefined) {
+     return undefined;
+   }
+-  if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) {
++  if (typeof value !== 'number' || !Number.isFinite(value)) {
+     issues.push(
+       `${path}: must be a number between ${min} and ${max}, got ${JSON.stringify(value)}`
+     );

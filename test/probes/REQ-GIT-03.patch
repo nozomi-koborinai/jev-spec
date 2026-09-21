@@ -1,0 +1,13 @@
+diff --git a/src/context/git-diff.ts b/src/context/git-diff.ts
+index e574b80..1020d5b 100644
+--- a/src/context/git-diff.ts
++++ b/src/context/git-diff.ts
+@@ -22,7 +22,7 @@ export async function extractGitDiff(
+   } else if (options.diffRange) {
+     assertGitRevision(options.diffRange);
+     // The revision must precede `--`; anything after it is parsed as a pathspec.
+-    args.push('--end-of-options', options.diffRange, '--');
++    args.push(options.diffRange);
+   }
+ 
+   let stdout = '';

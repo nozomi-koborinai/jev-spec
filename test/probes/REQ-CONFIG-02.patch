@@ -1,0 +1,12 @@
+diff --git a/src/config-validation.ts b/src/config-validation.ts
+index 66275dc..a24d52e 100644
+--- a/src/config-validation.ts
++++ b/src/config-validation.ts
+@@ -210,7 +210,6 @@ function validateTarget(path: string, target: unknown, issues: string[]): void {
+     const assertionPath = `${path}.assertions.${name}`;
+     if (!rubricTypes.has(name)) {
+       const known = [...rubricTypes.keys()].join(', ') || 'none';
+-      issues.push(`${assertionPath}: no rubric with this name (rubrics: ${known})`);
+       continue;
+     }
+ 

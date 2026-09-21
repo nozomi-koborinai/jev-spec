@@ -1,0 +1,15 @@
+diff --git a/src/runner/assertion-runner.ts b/src/runner/assertion-runner.ts
+index a929bd9..3b593bc 100644
+--- a/src/runner/assertion-runner.ts
++++ b/src/runner/assertion-runner.ts
+@@ -47,9 +47,7 @@ export function assertRubric(
+  * slip through every threshold. Asserted values must therefore be finite numbers.
+  */
+ function nonFiniteReason(label: string, value: number): string | undefined {
+-  return Number.isFinite(value)
+-    ? undefined
+-    : `Evaluator returned a non-numeric ${label} (${value})`;
++  return undefined;
+ }
+ 
+ function assertNoul(

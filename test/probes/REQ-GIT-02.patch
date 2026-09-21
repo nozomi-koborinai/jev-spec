@@ -1,0 +1,15 @@
+diff --git a/src/context/git-revision.ts b/src/context/git-revision.ts
+index e24f2f8..b901158 100644
+--- a/src/context/git-revision.ts
++++ b/src/context/git-revision.ts
+@@ -20,10 +20,6 @@ export function assertGitRevision(range: string): void {
+     throw new GitRevisionError('Git revision range must not be empty');
+   }
+ 
+-  if (trimmed.startsWith('-')) {
+-    throw new GitRevisionError(`Git revision range must not start with "-": "${trimmed}"`);
+-  }
+-
+   if (!GIT_REVISION_PATTERN.test(trimmed)) {
+     throw new GitRevisionError(`Git revision range contains invalid characters: "${trimmed}"`);
+   }

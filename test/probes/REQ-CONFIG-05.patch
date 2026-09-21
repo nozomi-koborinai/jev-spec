@@ -1,0 +1,12 @@
+diff --git a/src/config-validation.ts b/src/config-validation.ts
+index 66275dc..63d934d 100644
+--- a/src/config-validation.ts
++++ b/src/config-validation.ts
+@@ -250,6 +250,6 @@ export function validateConfig(config: JevSpecConfig): void {
+   }
+ 
+   if (issues.length > 0) {
+-    throw new ConfigValidationError(issues);
++    throw new ConfigValidationError(issues.slice(0, 1));
+   }
+ }
