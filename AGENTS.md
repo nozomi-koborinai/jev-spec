@@ -4,7 +4,7 @@ Instructions for coding agents working on this repository. For what the tool doe
 
 ## What matters most
 
-jev-spec is a **gate**: it verifies source code against Markdown specifications and fails CI when an assertion is breached. The worst possible bug is a check that passes without having verified anything. When in doubt, fail closed.
+jev-spec enforces a **gate**: it checks source code against Markdown specs and fails CI when an assertion is violated. The worst possible bug is a check that passes without having checked anything. When in doubt, fail closed.
 
 ## Commands
 
@@ -22,6 +22,8 @@ jev-spec is a **gate**: it verifies source code against Markdown specifications 
 5. **The TypeSafe SDK is 0.x.** Check `node_modules/@typesafe-ai/sdk/dist/index.d.mts` and <https://docs.typesafe.ai> before relying on a response shape, a limit or a price. Do not guess.
 6. **Changelog.** User-visible changes go under *Unreleased* in `CHANGELOG.md`.
 7. **Skills are product surface.** `skills/` holds the Agent Skills shipped to jev-spec users. When a CLI flag, a config option or the report format changes, update the affected skill in the same pull request.
+8. **Vocabulary.** `CONTEXT.md` is the glossary. Read it before you name anything (an identifier, a message, a heading, a commit) and use its terms; each entry lists the words it replaces. A new domain term is added there in the same pull request that introduces it.
+9. **English for the glossary and the specs.** Jev reads English most accurately (<https://docs.typesafe.ai/models#language-support>), and jev-spec checks itself against these documents. The translated READMEs are the only non-English documents.
 
 ## Commits, pull requests, releases
 
