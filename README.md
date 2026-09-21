@@ -162,7 +162,7 @@ bunx jev-spec check
 npx jev-spec check
 ```
 
-*(Note: run `jev-spec check --mock`, or set `client: { mock: true }` in your config, for offline testing and local CI simulation without an API key. Mock results are placeholders and every report is labelled `MOCK MODE`.)*
+*(No API key yet? `jev-spec check --dry-run` validates the configuration, spec parsing and file matching without evaluating anything. `--mock` runs the offline mock evaluator instead: its results are placeholders, and every report is labelled `MOCK MODE`.)*
 
 ---
 
@@ -311,16 +311,21 @@ bunx jev-spec check --diff origin/main...HEAD
 
 Zones whose `codePaths` match none of the changed files are reported as `SKIPPED`: they are not sent to Jev and do not affect the exit code, so a pre-commit hook never blocks a commit that does not touch a zone.
 
-#### Offline Mock Mode, Help & Version
+#### Dry Run, Mock Mode, Help & Version
 
 ```bash
-# Offline run without an API key (placeholder results, labelled MOCK MODE in every report)
+# Validate the setup: config, spec parsing, file matching. Evaluates nothing, needs no API key
+npx jev-spec check --dry-run
+
+# Offline mock evaluator (placeholder results, labelled MOCK MODE in every report)
 npx jev-spec check --mock
 
 # Usage and version (no configuration file required)
 npx jev-spec --help
 npx jev-spec --version
 ```
+
+A dry run prints, for every zone, the specification sections and requirement IDs it found, the code files it matched, the rubrics it would ask and the estimated cost. It also warns about requirement IDs that no rubric mentions, `codePaths` that match no file and a code context that exceeds the size budget. It exits with `0` when the setup is valid and `2` when it is not; it never exits with `1`, because nothing is verified.
 
 Unknown commands, unknown options, missing option values and unsupported `--format` values are rejected with exit code `2`.
 
@@ -382,7 +387,7 @@ Because Jev evaluates decisions in **sub-second time (70ms – 400ms)**, runtime
 
 1. **Untrusted Code Risk**: In public repositories, pull requests can modify `jev-spec.config.ts`, specifications, or code. Executing untrusted code with access to sensitive credentials introduces secret exfiltration vectors.
 2. **Recommended Defense-in-Depth Patterns**:
-   - **Offline Mock Mode for Fork PRs**: Run PR checks using mock mode (`jev-spec check --mock`), validating configuration structure, spec parsing, and glob matching without exposing API credentials.
+   - **Dry Run for Fork PRs**: Run PR checks as a dry run (`jev-spec check --dry-run`), validating configuration structure, spec parsing, and glob matching without exposing API credentials.
    - **Environment Protection**: For live verification on external PRs, use GitHub Actions Environment Approvals so maintainers review the diff before secrets are unlocked.
    - **Main Branch Verification**: Run live semantic verification on `push` to `main` and trusted internal release branches.
 
@@ -433,12 +438,9 @@ jobs:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
         run: npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run jev-spec (External Fork / Mock Mode)
+      - name: Run jev-spec (External Fork / Dry Run, No Secrets)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
-        run: |
-          npx jev-spec check --mock \
-            --diff origin/main...HEAD \
-            --format terminal
+        run: npx jev-spec check --dry-run
 ```
 
 The push step runs a full verification on purpose: on `main`, `origin/main...HEAD` is an empty range, so every zone would be skipped.

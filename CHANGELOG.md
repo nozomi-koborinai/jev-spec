@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- `jev-spec check --dry-run` validates a setup without evaluating anything: configuration, spec parsing and file matching. It needs no API key, prints per zone what would be sent (spec sections, requirement IDs, code files, context sizes, rubrics, estimated cost), and exits with `0` when the setup is valid or `2` when it is not. It warns about requirement IDs that no rubric mentions, `codePaths` that match no file, and a code context that would be cut at the size budget. JSON output gains `dryRun` and a per-zone `plan`. It cannot be combined with `--mock`.
+- `ExtractedCodeContext.truncated` tells whether the code context was cut at the character budget.
 - Two [Agent Skills](https://agentskills.io) for coding agents, installable with `gh skill install nozomi-koborinai/jev-spec <name>`:
   - `jev-spec-init` sets jev-spec up in a repository: it maps specifications to code, writes one focused question per requirement, validates the wiring offline, and reports which requirements are not covered.
   - `jev-spec-fix` works through a failing check: it separates the four possible causes (code, specification, rubric, model) and ends with a report of what was and was not verified.
@@ -14,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- The recommended GitHub Actions workflow validates pull requests from forks with `--dry-run` instead of `--mock`. A mock run exits with `1` on placeholder verdicts, which made fork pull requests fail for reasons unrelated to their content.
 - The Quickstart in the README asks one question per requirement instead of joining `REQ-AUTH-01` and `REQ-AUTH-02` in a single question, in line with the guidance in the new skills.
 - The exported union types no longer contain `any`: `AnyRubric`, `AnyAssertion` and `AnyRubricResult` use `string` for choice keys, and `JevSpecConfig.zones` is typed as the new exported `AnyZoneConfig` instead of `ZoneConfig<any>`. Runtime behaviour is unchanged. Hand-written `JevSpecConfig` objects are now type-checked more strictly (for example, a misspelled assertion option is a compile error).
 

@@ -100,20 +100,25 @@ Count requirements, not rubrics: "4 of 5 requirements have at least one rubric (
 
 ### 5. Validate the wiring offline
 
+No API key is needed for this step. Check `npx jev-spec --help` and take the first branch that applies.
+
+**`--help` lists `--dry-run`:**
+
+```sh
+npx jev-spec check --dry-run
+```
+
+A dry run evaluates nothing. It prints, per zone, the specification sections and requirement IDs it found, the code files it matched and the rubrics it would ask. Exit code `0` means the setup is valid and `2` means it is broken (invalid config, missing spec file, `specFilter` that matches nothing); fix it. Read the report: every zone must list the spec file and the code files you expect. Treat each warning as a finding. In particular `no rubric names REQ-…` must agree with the "not covered" rows of your coverage table; if it does not, one of the two is wrong.
+
+**`--help` does not list `--dry-run` (jev-spec 0.1.x):**
+
 ```sh
 npx jev-spec check --mock
 ```
 
-Mock mode needs no API key. **Its verdicts are placeholders** produced by keyword rules (for example, a `TODO` in the code fails every "satisfy" question, and a `choice` always selects its first option). Only this matters:
+Mock mode returns **placeholder verdicts** produced by keyword rules (for example, a `TODO` in the code fails every "satisfy" question, and a `choice` always selects its first option). Only the exit code matters: `0` or `1` means the wiring works, and `1` does **not** mean anything is wrong; `2` means the setup is broken. Read the report for the spec file and code files of every zone, then stop.
 
-| Exit code | Meaning in mock mode |
-| :-- | :-- |
-| `0` or `1` | The wiring works: config valid, spec sections found, files matched. `1` does **not** mean anything is wrong. |
-| `2` | Broken setup: invalid config, missing spec file, `specFilter` that matches nothing. Fix it. |
-
-Read the report: every zone must list the spec file and the code files you expect. Then stop.
-
-**Do not change a rubric, a threshold, the number of score levels or the order of choice options to turn mock mode green.** That shapes the real gate around a stub that knows nothing about the code. If mock verdicts are in the way, the mistake is using mock mode as a gate (see step 7).
+In both branches: **do not change a rubric, a threshold, the number of score levels or the order of choice options to make an offline run look better.** Offline runs know nothing about the code. If mock verdicts are in the way, the mistake is using mock mode as a gate (see step 7).
 
 ### 6. Go live and calibrate
 
@@ -138,7 +143,7 @@ exec npx --no-install jev-spec check --staged
 
 Without a key the hook **skips**. It must not fall back to `--mock`: that would block commits on placeholder verdicts. Do not write the hook into `.git/hooks/`: that directory is not versioned, so no other clone would get it.
 
-Then **run the hook** instead of assuming it works. Activate it first (`npm run prepare`, or `git config core.hooksPath .githooks`), stage a harmless change inside a zone, and run `git hook run pre-commit` (or execute the hook file) once without a key and, if a key is available, once with it. Without a key only the skip branch runs, so also run `npx jev-spec check --staged --mock` by hand once: the zone of the staged file must be evaluated and the others `SKIPPED` (exit code 0 or 1, as in step 5). Unstage the change afterwards. Report what each run printed and its exit code. A hook that was only written, never executed, is not done.
+Then **run the hook** instead of assuming it works. Activate it first (`npm run prepare`, or `git config core.hooksPath .githooks`), stage a harmless change inside a zone, and run `git hook run pre-commit` (or execute the hook file) once without a key and, if a key is available, once with it. Without a key only the skip branch runs, so also run `npx jev-spec check --staged --dry-run` by hand once (`--staged --mock` on 0.1.x): the zone of the staged file must be listed with its files and the others `SKIPPED`. Unstage the change afterwards. Report what each run printed and its exit code. A hook that was only written, never executed, is not done.
 
 **GitHub Actions.** Create `.github/workflows/spec-check.yml`. Secrets are only available to pushes and same-repository pull requests; pull requests from forks get a wiring check only.
 
@@ -168,11 +173,11 @@ jobs:
         run: npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
       - name: Validate wiring only (fork pull request, no secrets)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
-        run: npx jev-spec check --mock || [ "$?" -eq 1 ]
+        run: npx jev-spec check --dry-run
 ```
 
 - CI runs the **full** check on purpose. `--diff origin/main...HEAD` sends only diff hunks, which is too little context for "is this requirement satisfied?", and it skips a pull request that changes only the specification. A full check costs cents. Use `--diff` (it needs `fetch-depth: 0`) only when the repo is too large for that.
-- `|| [ "$?" -eq 1 ]` accepts exit codes 0 and 1 and still fails on 2, which is exactly the mock-mode contract from step 5.
+- The fork step is a dry run: it fails only when the setup is broken. On jev-spec 0.1.x, which has no `--dry-run`, use `npx jev-spec check --mock || [ "$?" -eq 1 ]` instead: it accepts exit codes 0 and 1 and still fails on 2, which is the mock-mode contract from step 5.
 - `--output` only accepts paths inside the repository. For the step summary, redirect stdout as shown.
 - Until the `TYPESAFE_AI_API_KEY` secret exists, the verify step fails with "API key is required". Tell the user to add the secret first, or to merge the workflow once they have the key. Do not paper over it with `--mock`.
 
@@ -186,7 +191,7 @@ End with a summary in the user's language, in this shape:
 Done:
   ✓ Installed jev-spec 0.1.x (npm)
   ✓ jev-spec.config.ts: 2 zones, 6 rubrics
-  ✓ Wiring validated offline (mock mode, exit code 1 is expected)
+  ✓ Wiring validated offline (dry run: exit code 0, no warnings)
 
 Coverage: 5 of 6 requirements have at least one rubric (7 rubrics)
   REQ-OPS-02  not covered: <reason>
