@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Internal
 
+- `CONTEXT.md` defines the project's vocabulary (check, target, drift, rubric, assertion, run and the words each of them replaces), and `AGENTS.md` points to it. The code and the documentation are aligned with it in the following changes.
 - The release workflow builds the GitHub Release body from the version's section of `CHANGELOG.md` (`scripts/release-notes.mjs`). It runs before `npm publish` and stops the release when the tag does not match `package.json`, when the changelog has no section for the version, or when that section is empty. `softprops/action-gh-release` moves from `v2`, which is no longer maintained, to `v3` (Node 24 runtime, same inputs).
 
 ## [0.2.0] - 2026-09-21
