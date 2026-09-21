@@ -30,6 +30,10 @@ A bug-fix release. Several of these bugs made a check pass, fail or get skipped 
 - Skipped zones are flagged with `skipped` / `skipReason` in the JSON result.
 - `validateConfig()`, `ConfigValidationError` and `SpecFilterError` are exported from the package entry point.
 
+### Removed
+
+- Three runtime dependencies that were never imported: `mdast-util-to-markdown`, `micromark` (still installed transitively through `mdast-util-from-markdown`) and `unist-util-visit`.
+
 ### Upgrade notes
 
 - A configuration that contained one of the mistakes listed above used to run (and pass); it now stops with exit code `2` and a message that points at the offending config path. Fix the configuration rather than pinning 0.1.0.
