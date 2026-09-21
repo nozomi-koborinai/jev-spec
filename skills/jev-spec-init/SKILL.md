@@ -52,7 +52,7 @@ This is the part that decides whether the gate is worth anything.
 - **Prohibitions** ("MUST NOT log tokens"): either ask for compliance in the shape above, or ask for the violation, `'Does the code violate <ID> by <the forbidden behavior>?'`, and assert `maxProbability`. Choose the form without stacked negations. Avoid questions that require counting.
 - **`choice` and `score` only when something depends on them.** A generic "security posture" or "completeness" rubric is a vague, target-wide judgment. Add one when the user names a decision it drives.
 - **Tables are not sent to the model.** jev-spec 0.1.x replaces Markdown tables in the specification with `[table omitted]`. If criteria live in a table, write one question per row and restate the row in it. That only helps those questions: the drift question still cannot see the table and may take required behavior for undocumented behavior. Tell the user, and suggest converting the table to a list, which is the real fix. Do not edit the specification yourself.
-- **Thresholds**: start with `minProbability: 0.85` and `maxProbability: 0.15`, and say plainly that these are starting points. They get calibrated in step 6, with the real model.
+- **Thresholds**: start with `minProbability: 0.85` and `maxProbability: 0.15`, and say plainly that these are starting points. They get tuned in step 6, with the real model.
 
 Write `jev-spec.config.ts` from this skeleton. An assertion key that matches no rubric stops the run with exit code 2; in a repo that type-checks the file, `defineConfig` also makes it a compile error.
 
@@ -120,11 +120,11 @@ Mock mode returns **placeholder verdicts** produced by keyword rules (for exampl
 
 In both branches: **do not change a rubric, a threshold, the number of score levels or the order of choice options to make an offline run look better.** Offline runs know nothing about the code. If mock verdicts are in the way, the mistake is using mock mode as a gate (see step 7).
 
-### 6. Go live and calibrate
+### 6. Go live and tune
 
 1. The user creates a key at <https://console.typesafe.ai/keys> and exports `TYPESAFE_AI_API_KEY` (`TYPESAFE_API_KEY` works too). Never write the key into the config or commit it.
 2. Run `npx jev-spec check`. A check costs a fraction of a cent.
-3. Calibrate: compare the probabilities for code known to be right with a deliberately broken copy (remove a required check, then restore it). Set each threshold between the two with margin. A `noul` that stays near `0.5` means the model cannot tell: improve the question or shrink the target instead of lowering the threshold.
+3. Tune the thresholds: compare the probabilities for code known to be right with a deliberately broken copy (remove a required check, then restore it). Set each threshold between the two with margin. A `noul` that stays near `0.5` means the model cannot tell: improve the question or shrink the target instead of lowering the threshold.
 4. Pin the model: copy the versioned ID from the `Model:` line of the report into `client: { model: '…' }` in the config. Without it jev-spec asks the alias `jev-latest`, which moves to a newer model with every release, and the thresholds you just set stop being comparable. (`npx jev-spec --help` on versions before 0.3.0 has no such option; skip this item there.)
 
 If the user has no key yet, finish steps 1–5, say clearly that **nothing has been verified yet**, and leave step 6 as their next action.
@@ -197,7 +197,7 @@ Done:
 Coverage: 5 of 6 requirements have at least one rubric (7 rubrics)
   REQ-OPS-02  not covered: <reason>
 
-Not verified yet: no live run (no API key). Thresholds are uncalibrated starting points.
+Not verified yet: no live run (no API key). Thresholds are untuned starting points.
 Next: create a key at https://console.typesafe.ai/keys, export TYPESAFE_AI_API_KEY, run `npx jev-spec check`.
 ```
 
@@ -209,7 +209,7 @@ Report what you observed, not what you expect: if no live run happened, no requi
 - **Several spec files for one feature** (Kiro's `requirements.md` + `design.md`): `specPath` takes one file. Point it at the requirements file; design documents are not requirements.
 - **Monorepo**: run jev-spec from the package directory that owns the config. In `--staged` / `--diff` mode, changed paths are relative to the repository root, so `codePaths` must be written that way too.
 - **A `specFilter` that matches nothing** is an error (exit code 2) since 0.1.1. Check the prefix for typos.
-- **Non-English specifications**: write the questions in the same language as the spec, and calibrate (step 6) before trusting the thresholds.
+- **Non-English specifications**: write the questions in the same language as the spec, and tune the thresholds (step 6) before trusting them.
 
 ## See also
 

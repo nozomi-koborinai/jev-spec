@@ -44,7 +44,7 @@ Because `jev-spec` operates inside developer environments and CI/CD pipelines wh
 
 ---
 
-## Built-in Security Hardening Guarantees
+## Built-in Security Hardening
 
 `jev-spec` implements comprehensive defensive measures (Hardening fixes S-01 through S-05) to ensure execution integrity:
 
@@ -62,7 +62,7 @@ Because `jev-spec` operates inside developer environments and CI/CD pipelines wh
 - **Argument Delimiters**: Option parsing is terminated with `--end-of-options` before the user-provided revision range, and the range is followed by `--` so it can never be read as an option or a pathspec.
 - **Execution Timeouts**: A hard 15-second timeout is enforced on all git diff executions to avoid runner deadlocks on corrupted repositories.
 
-### 3. Prompt Isolation & Anti-Prompt-Injection Framing (S-04)
+### 3. Prompt Boundaries (S-04, best effort)
 
 - **Context Boundaries**: Code and specification text sent to TypeSafe AI Jev are wrapped in explicit, structural boundary tags:
 
@@ -76,7 +76,8 @@ Because `jev-spec` operates inside developer environments and CI/CD pipelines wh
   </untrusted_source_code>
   ```
 
-- **Adversarial Framing Defense**: Questions evaluated by Jev are prepended with strict evaluation instructions directing the model to evaluate only the verifiable functional behavior of `<untrusted_source_code>` against `<specification_context>`, while ignoring embedded system instructions, override markers, or fake requirement assertions inside code comments.
+- **Framing Note**: The `specification` field of the state starts with a note that asks the model to judge only the functional behaviour of the code against the specification, and to ignore instructions, override markers and claims of compliance embedded in comments or prose.
+- **Limits**: This is a mitigation, not a guarantee. TypeSafe documents that content written to steer the model, including text that argues for its own classification, [can move the answer](https://docs.typesafe.ai/model-jaggedness/jev-1.13#adversarial-content), and jev-spec has no measurement that shows the tags or the note prevent it. A comment that claims compliance is such text. Treat a pass on code you do not trust as weak evidence, and keep human review for it.
 
 ### 4. Base URL SSRF & Credential Leak Protection (S-05)
 
