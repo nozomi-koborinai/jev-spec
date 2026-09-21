@@ -18,16 +18,6 @@ export interface CheckCliOptions {
   readonly cwd?: string;
 }
 
-export class JevSpecCliError extends Error {
-  constructor(
-    message: string,
-    readonly exitCode: 2 | 1 = 2
-  ) {
-    super(message);
-    this.name = 'JevSpecCliError';
-  }
-}
-
 function resolveGitDiffOptions(options: CheckCliOptions) {
   if (options.staged) {
     return { staged: true as const };
@@ -80,9 +70,7 @@ export async function checkCommand(options: CheckCliOptions = {}): Promise<numbe
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`\n[jev-spec error] ${message}`);
-    if (error instanceof JevSpecCliError) {
-      return error.exitCode;
-    }
+    // Every error is a 2. Exit code 1 is reserved for a violated assertion.
     return 2;
   }
 }
