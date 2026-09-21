@@ -21,8 +21,8 @@ Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
   Model: jev-1.13.0
-    ✔ verifiesSessionTokens: probability: 0.97
-    ✖ rejectsRevokedTokens: probability: 0.08
+    ✔ REQ-AUTH-01: probability: 0.97
+    ✖ REQ-AUTH-02: probability: 0.08
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
     ✔ introducesUnspecifiedBehavior: probability: 0.03
 
@@ -66,11 +66,15 @@ You can put these questions to a general-purpose LLM in a prompt. Then you parse
 
 - **A probability is not a proof.** jev-spec tells you that code has probably drifted from a requirement. It complements tests and review and replaces neither. Tune the thresholds on your own code before you trust them.
 - **Keep targets small.** A target is sent in one request. Make it one domain, not the whole `src/` tree: Jev gets less accurate as unrelated content grows (see its [known limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13)).
-- **Ask narrow questions.** One requirement per question. Multi-part questions, counting and stacked negations are answered less reliably.
+- **Ask narrow, literal questions.** One behaviour per question, asked directly ("Is a token rejected when …?"), and say which part of the code you mean when two are alike. A requirement restated as a claim, multi-part questions, counting and stacked negations are answered less reliably.
 - **English works best.** Jev's [primary training language is English](https://docs.typesafe.ai/models#language-support). Other languages, CJK scripts included, are accepted but less accurate, and TypeSafe advises testing on your own content first. With specs in another language, tune the thresholds on your own documents before you gate on them.
 - **Markdown tables in a specification are not sent to the model yet.** Restate the rows in the question, or write the requirement as a list.
 - **`--staged` and `--diff` send only the changed hunks.** That is less context than the full files: good for fast feedback, while a full check sees everything.
 - **Real checks need a [TypeSafe API key](https://console.typesafe.ai/keys).** `jev-spec check --dry-run` validates your setup without one.
+
+### jev-spec checks itself
+
+jev-spec has specs of its own and is checked against them. [`docs/specs/`](docs/specs) states the requirements, [`jev-spec.config.ts`](jev-spec.config.ts) pairs each group with the one to three files that implement it, and [`test/probes/`](test/probes) holds, for every requirement, a patch that breaks it on purpose. A rubric belongs in the gate only when it passes on the intact code and fails on the broken copy. [`docs/probe-results.md`](docs/probe-results.md) records the latest run: 18 of 18 probes caught with `jev-1.13.0`. A full check of the 6 targets and 18 rubrics takes under three seconds and costs an estimated $0.0004. The first run did not look like that: the questions, not the thresholds, were what had to change, and what we learned is in the header of the configuration.
 
 ### Architecture Overview
 
@@ -136,14 +140,12 @@ export default defineConfig({
         requirementPrefix: 'REQ-AUTH-',
       },
       rubrics: {
-        verifiesSessionTokens: noul(
-          'Does the code satisfy REQ-AUTH-01: the signature of every session token is verified before access to a protected resource is granted?'
+        'REQ-AUTH-01': noul(
+          'Is the signature of a session token checked before access to a protected resource is granted?'
         ),
-        rejectsRevokedTokens: noul(
-          'Does the code satisfy REQ-AUTH-02: a token whose ID is on the revocation list is rejected?'
-        ),
+        'REQ-AUTH-02': noul('Is a token rejected when its ID is on the revocation list?'),
         introducesUnspecifiedBehavior: noul(
-          'Does the implementation introduce undocumented endpoints, global state mutability, or unauthenticated bypasses?'
+          'Does the code add a way to reach a protected resource that the spec does not describe?'
         ),
         securityPosture: choice('Security posture of session management', {
           secure: 'Proper signature validation and revocation checks present',
@@ -156,8 +158,8 @@ export default defineConfig({
         ]),
       },
       assertions: {
-        verifiesSessionTokens: { minProbability: 0.85 },
-        rejectsRevokedTokens: { minProbability: 0.85 },
+        'REQ-AUTH-01': { minProbability: 0.85 },
+        'REQ-AUTH-02': { minProbability: 0.85 },
         introducesUnspecifiedBehavior: { maxProbability: 0.15 },
         securityPosture: { allowedChoices: ['secure'], minConfidence: 0.75 },
         implementationCompleteness: { minScore: 1.8 },
@@ -167,7 +169,7 @@ export default defineConfig({
 });
 ```
 
-Ask one narrow question per requirement and name its ID. A question that joins several requirements cannot tell you which one failed, and the model answers it less reliably.
+Name each rubric after the requirement it checks, and ask one direct, literal question about what the code must do. The name of a rubric is never sent to the model, and the report prints it, so a failure names its requirement. Keep the ID out of the question: in [our own measurements](docs/probe-results.md), "Does the code satisfy REQ-AUTH-01: …?" was answered "yes" for code that had been broken on purpose, and the same question asked directly was not. A question that joins several requirements cannot tell you which one failed.
 
 ### 3. Run the Check
 

@@ -21,8 +21,8 @@ Target: auth [✖ FAILED]
   Spec files: docs/specs/auth.md
   Code files: src/auth/session.ts
   Model: jev-1.13.0
-    ✔ verifiesSessionTokens: probability: 0.97
-    ✖ rejectsRevokedTokens: probability: 0.08
+    ✔ REQ-AUTH-01: probability: 0.97
+    ✖ REQ-AUTH-02: probability: 0.08
        └─ Violation: Probability 0.08 is below minimum threshold 0.85
     ✔ introducesUnspecifiedBehavior: probability: 0.03
 
@@ -66,11 +66,15 @@ $ echo $?
 
 - **확률은 증명이 아닙니다.** jev-spec이 알려 주는 것은 코드가 요구 사항에서 벗어났을 가능성이 높다는 사실입니다. 테스트와 리뷰를 보완할 뿐, 어느 쪽도 대체하지 않습니다. 임계값은 신뢰하기 전에 여러분의 코드로 조정하세요.
 - **대상은 작게 유지하세요.** 대상 하나는 한 번의 요청으로 전송됩니다. `src/` 전체가 아니라 하나의 도메인으로 잡으세요. 무관한 내용이 늘어날수록 Jev의 정확도가 떨어집니다([알려진 한계](https://docs.typesafe.ai/model-jaggedness/jev-1.13) 참고).
-- **질문은 좁게.** 질문 하나에 요구 사항 하나. 여러 조건을 묶은 질문, 개수를 세는 질문, 부정이 겹친 질문은 답의 신뢰도가 떨어집니다.
+- **질문은 좁게, 글자 그대로.** 질문 하나에 동작 하나. 직접 의문문("Is a token rejected when …?")으로 묻고, 비슷한 부분이 둘 있을 때는 어느 부분을 말하는지 밝히세요. 요구 사항을 주장처럼 바꿔 쓴 질문, 여러 조건을 묶은 질문, 개수를 세는 질문, 부정이 겹친 질문은 답의 신뢰도가 떨어집니다.
 - **영어에서 가장 정확합니다.** Jev의 [주된 학습 언어는 영어](https://docs.typesafe.ai/models#language-support)입니다. 한국어·중국어·일본어를 포함한 다른 언어도 입력할 수 있지만 정확도는 떨어지며, TypeSafe도 먼저 자신의 콘텐츠로 시험해 보라고 권합니다. 영어가 아닌 명세에 사용할 때는 게이트로 쓰기 전에 여러분의 문서로 임계값을 조정하세요.
 - **명세 안의 Markdown 표는 아직 모델로 전송되지 않습니다.** 표의 행 내용을 질문 안에서 다시 서술하거나, 요구 사항을 목록으로 작성하세요.
 - **`--staged`와 `--diff`는 변경된 헝크만 전송합니다.** 전체 파일보다 문맥이 적어 빠른 피드백에 적합하며, 모든 것을 보는 것은 전체 검사입니다.
 - **실제 검사에는 [TypeSafe API 키](https://console.typesafe.ai/keys)가 필요합니다.** `jev-spec check --dry-run`은 키 없이도 설정을 검증합니다.
+
+### jev-spec은 자기 자신도 검사합니다
+
+jev-spec에는 자체 명세가 있으며, 그 명세에 비추어 검사를 받습니다. [`docs/specs/`](docs/specs)가 요구 사항을 정하고, [`jev-spec.config.ts`](jev-spec.config.ts)가 요구 사항 묶음마다 그것을 구현하는 한 개에서 세 개의 파일을 짝지으며, [`test/probes/`](test/probes)에는 요구 사항마다 그것을 일부러 망가뜨리는 패치가 있습니다. 루브릭은 온전한 코드에서 통과하고 망가진 사본에서 실패할 때에만 게이트에 들어갈 자격이 있습니다. [`docs/probe-results.md`](docs/probe-results.md)에 최근 실행 결과가 기록되어 있습니다. `jev-1.13.0`으로 18개의 프로브 중 18개를 잡아냈습니다. 6개 대상, 18개 루브릭 전체 검사는 3초가 채 걸리지 않으며 예상 비용은 $0.0004입니다. 첫 실행은 이렇지 않았습니다. 바꿔야 했던 것은 임계값이 아니라 질문이었고, 거기서 배운 내용은 설정 파일 머리말 주석에 정리되어 있습니다.
 
 ### 아키텍처 개요
 
@@ -136,14 +140,12 @@ export default defineConfig({
         requirementPrefix: 'REQ-AUTH-',
       },
       rubrics: {
-        verifiesSessionTokens: noul(
-          'Does the code satisfy REQ-AUTH-01: the signature of every session token is verified before access to a protected resource is granted?'
+        'REQ-AUTH-01': noul(
+          'Is the signature of a session token checked before access to a protected resource is granted?'
         ),
-        rejectsRevokedTokens: noul(
-          'Does the code satisfy REQ-AUTH-02: a token whose ID is on the revocation list is rejected?'
-        ),
+        'REQ-AUTH-02': noul('Is a token rejected when its ID is on the revocation list?'),
         introducesUnspecifiedBehavior: noul(
-          'Does the implementation introduce undocumented endpoints, global state mutability, or unauthenticated bypasses?'
+          'Does the code add a way to reach a protected resource that the spec does not describe?'
         ),
         securityPosture: choice('Security posture of session management', {
           secure: 'Proper signature validation and revocation checks present',
@@ -156,8 +158,8 @@ export default defineConfig({
         ]),
       },
       assertions: {
-        verifiesSessionTokens: { minProbability: 0.85 },
-        rejectsRevokedTokens: { minProbability: 0.85 },
+        'REQ-AUTH-01': { minProbability: 0.85 },
+        'REQ-AUTH-02': { minProbability: 0.85 },
         introducesUnspecifiedBehavior: { maxProbability: 0.15 },
         securityPosture: { allowedChoices: ['secure'], minConfidence: 0.75 },
         implementationCompleteness: { minScore: 1.8 },
@@ -167,7 +169,7 @@ export default defineConfig({
 });
 ```
 
-질문은 요구 사항마다 하나씩, 요구 사항 ID를 명시해서 작성하세요. 여러 요구 사항을 하나의 질문으로 묶으면 어느 것이 실패했는지 알 수 없고, 모델의 답변 신뢰도도 떨어집니다.
+루브릭에는 검사하는 요구 사항의 ID를 이름으로 붙이고, 코드가 해야 할 일을 직접적으로, 글자 그대로 한 가지만 물으세요. 루브릭의 이름은 모델에 전송되지 않고 보고서에 표시되므로, 실패했을 때 어떤 요구 사항인지 바로 알 수 있습니다. ID는 질문 안에 넣지 마세요. [이 저장소 자체에 대한 실측](docs/probe-results.md)에서 "Does the code satisfy REQ-AUTH-01: …?" 형태의 질문은 일부러 망가뜨린 코드에도 "예"라는 답을 받았고, 같은 내용을 직접 물은 질문은 그렇지 않았습니다. 여러 요구 사항을 하나의 질문으로 묶으면 어느 것이 실패했는지 알 수 없습니다.
 
 ### 3. 검사 실행
 
