@@ -403,7 +403,7 @@ jobs:
 | 安全防御项 | 机制实现与保证 |
 | :--- | :--- |
 | **路径遍历防御与 Root Jail** | 所有工作区路径均通过 realpath 规范化解析严格校验（`assertInsideRoot()`）。拒绝工作目录之外的绝对路径、`..` 目录遍历以及逃逸出仓库根目录的符号链接。 |
-| **Git Revision 参数净化** | 传入 `--diff` 的参数严格按照 Git 版本格式正则校验（`assertGitRevision()`）。拒绝任何以 `-` 开头的注入选项（防御类似 `--output` 的参数注入），使用 `--` 隔离区间参数，并强制执行 15 秒命令超时。 |
+| **Git Revision 参数净化** | 传入 `--diff` 的参数严格按照 Git 版本格式正则校验（`assertGitRevision()`）。拒绝任何以 `-` 开头的注入选项（防御类似 `--output` 的参数注入），在版本区间参数之前使用 `--end-of-options` 终止选项解析，并强制执行 15 秒命令超时。 |
 | **提示词边界隔离防御** | 不受信任的规范文档与代码内容被严格封闭在明确的边界标签（`<specification_context>` 与 `<untrusted_source_code>`）中，并配有严格的防注入指令，指示 Jev 忽略代码内部潜藏的 Prompt 劫持指令。 |
 | **Base URL SSRF 防御** | 默认情况下，请求严格限定在官方 TypeSafe AI 域名（`https://api.typesafe.ai`）。除非显式设置 `allowCustomBaseUrl: true`，否则拒绝所有自定义 API 地址，杜绝内网探测与 SSRF 风险。 |
 | **资源耗尽保护** | 限制单次扫描最多 500 个文件，单个文件体积上限 2MB，并对单次评估 Prompt 执行严格的字符截断，防止 DoS 攻击与内存耗尽。 |

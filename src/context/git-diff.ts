@@ -21,7 +21,8 @@ export async function extractGitDiff(
     args.push('--staged');
   } else if (options.diffRange) {
     assertGitRevision(options.diffRange);
-    args.push('--', options.diffRange);
+    // The revision must precede `--`; anything after it is parsed as a pathspec.
+    args.push('--end-of-options', options.diffRange, '--');
   }
 
   let stdout = '';
