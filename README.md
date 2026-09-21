@@ -10,61 +10,76 @@
 
 🌐 [日本語](README.ja.md) | [简体中文](README.zh.md) | [한국어](README.ko.md)
 
-**Specification-Driven Semantic Verification Engine for AI Code & Specs powered by TypeSafe AI Jev.**
+**Unit tests for your specs.** `jev-spec` checks your code against the requirements in your Markdown specification and fails the build when they drift apart. It asks [TypeSafe AI's Jev model](https://docs.typesafe.ai) one focused question per requirement, gets a probability back, and compares it with a threshold you set. That makes it small enough for a pre-commit hook and strict enough for a CI gate.
+
+```text
+$ npx jev-spec check
+
+=== jev-spec Verification Report ===
+
+Zone: auth [✖ FAILED]
+  Spec files: docs/specs/auth.md
+  Code files: src/auth/session.ts
+    ✔ verifiesSessionTokens: probability: 0.97
+    ✖ rejectsRevokedTokens: probability: 0.08
+       └─ Violation: Probability 0.08 is below minimum threshold 0.85
+    ✔ introducesUnspecifiedBehavior: probability: 0.03
+
+Overall: ✖ VERIFICATION FAILED
+
+$ echo $?
+1
+```
+
+*Example report. The layout is what the CLI prints (timing and cost lines omitted); the probabilities are illustrative.*
 
 ---
 
-## Why jev-spec? Bridging the Semantic Gap
+## Why jev-spec?
 
-In Specification-Driven Development (SDD) and AI-assisted workflows (Cursor, agentic coding tools, GitHub Copilot), structural linters deterministically enforce markdown schemas, heading hierarchies, cross-references, and requirement IDs. However, static linters cannot bridge the **semantic gap**:
+Linters and schema checks can tell you that `REQ-AUTH-02` exists, is well formed and is linked from the right place. They cannot tell you whether the code does what `REQ-AUTH-02` says. With AI-assisted development that gap widens, because the code changes faster than anyone rereads the specification:
 
-- *Does `src/auth/session.ts` truly satisfy the functional criteria stipulated in `REQ-AUTH-02`?*
-- *Did the AI assistant silently introduce unrequested side effects, bypass headers, or undocumented endpoints?*
-- *Is this pull request an actual feature-complete implementation or an optimistic stub with placeholder comments?*
+- *Does `src/auth/session.ts` still satisfy `REQ-AUTH-02`?*
+- *Did the assistant quietly add a bypass header or an endpoint that nobody specified?*
+- *Is this pull request a complete implementation, or a stub with optimistic comments?*
 
-### The Autoregressive LLM Trap: Free-Form Generation for Verification
+You can put these questions to a general-purpose LLM in a prompt. Then you parse prose, the shape of the answer changes between runs, and you pay for every generated token. That is an awkward thing to gate a build on.
 
-Evaluating semantic compliance historically required prompting autoregressive generative language models with prompt engineering:
+### What jev-spec does instead
 
-- **High Latency**: Sequential token-by-token generation takes **5 to 15 seconds** per file review.
-- **Prohibitive Cost**: Autoregressive decoding burns **$0.05 to $0.20+** per file evaluation.
-- **Non-Deterministic Drift**: Fragile prompt templates, hallucinated justifications, JSON parsing failures, and subjective variance across runs.
-- **Workflow Friction**: Too slow for pre-commit git hooks, staged diff checks, or fast blocking CI gates.
+1. **You write questions, not prompts.** Each requirement gets one yes/no question (`noul`). Categorical (`choice`) and ordinal (`score`) rubrics are available when a decision depends on them. They live in a typed `jev-spec.config.ts`.
+2. **Jev answers with numbers.** Jev is a [System One model](https://docs.typesafe.ai/concepts/system-one): it does not generate text. It reads the specification and the code once and returns a probability for every question in the same request. TypeSafe trains it for [calibrated probabilities](https://docs.typesafe.ai/introduction/machine-learning-primer), which is what gives a threshold its meaning.
+3. **Thresholds decide.** `minProbability: 0.85`, `maxProbability: 0.15`, `allowedChoices`, `minScore`: plain comparisons and standard exit codes (`0` passed, `1` failed, `2` broken setup).
+4. **It is cheap enough for every commit.** Jev is priced on input tokens only, [$0.042 per million](https://docs.typesafe.ai/models), and output is free, so checking a zone costs a fraction of a cent. Every report prints the estimate. TypeSafe publishes its own [speed and cost comparison](https://typesafe.ai) with general-purpose LLMs.
 
-### The Jev Advantage: Structured Decision Primitives over Free-Form Text Generation
-
-In optical physics, a **collimator** takes a diffuse, scattered beam of light and narrows it into parallel, focused rays. `jev-spec` acts as a semantic collimator: taking the diffuse, high-entropy output of AI coding models and focusing it into mathematically calibrated, deterministic verification decisions.
-
-Powered by **TypeSafe AI Jev**, `jev-spec` is built on structured decision primitives rather than token-by-token text generation:
-
-- **Structured Decision Primitives**: Rather than generating free-form prose or JSON strings token-by-token, Jev directly predicts calibrated probability distributions over typed decision primitives (`noul`, `choice`, `score`) in a single forward pass over shared specification and implementation context.
-- **Sub-400ms Verification**: Single forward-pass evaluation in **70ms to 400ms**.
-- **Radical Cost Efficiency**: **$0.042 per million input tokens** (output tokens are free) — over 100x cheaper than generative review prompts.
-- **Mathematical Calibration**: Evaluates typed decision primitives trained with Reinforcement Learning for Calibrated Decisions (RLCD). A predicted probability of 0.85 means the proposition is empirically true in 85% of cases.
-- **Parallel Sampler**: Evaluates boolean propositions (`noul`), categorical distributions (`choice`), and ordinal rubrics (`score`) simultaneously in a single forward pass without sequential token decoding.
-- **Deterministic Numerical Assertions**: Test semantic assertions (`minProbability`, `maxProbability`, `allowedChoices`, `minScore`) directly in your terminal, pre-commit hooks, or CI pipeline with standard exit codes.
-
-| Capability | Autoregressive LLM Prompting | jev-spec + Jev (Decision Primitives) |
+| | Prompting a general-purpose LLM | jev-spec with Jev |
 | :--- | :--- | :--- |
-| **Execution Speed** | 5,000ms – 15,000ms per file | **70ms – 400ms** (single forward pass) |
-| **Token Pricing** | ~$3.00 – $15.00 / MTok | **$0.042 / MTok** (output tokens free) |
-| **Evaluation Mode** | Free-form token-by-token text/JSON generation | **Single forward pass over typed decision primitives** |
-| **Output Type** | Unstructured prose or parsed JSON strings | **Calibrated probabilities & categorical distributions** |
-| **Determinism** | Subjective reasoning & formatting drift | **Numerical thresholds (`minProbability: 0.85`)** |
-| **Git Hooks & Fast CI** | Impractical (breaks developer flow) | **Instant (<100ms startup with Bun)** |
+| **What comes back** | Prose or JSON that you parse | A probability, a choice or a score per question |
+| **How you gate on it** | Parse the text and hope the format holds | Numeric thresholds and exit codes |
+| **What you pay for** | Input and generated output tokens | Input tokens only |
+| **Where it fits** | Asynchronous review | Pre-commit hooks and blocking CI checks |
+
+### Know the limits
+
+- **A probability is not a proof.** jev-spec tells you that code has probably drifted from a requirement. It complements tests and review and replaces neither. Calibrate the thresholds on your own code before you trust them.
+- **Keep zones small.** A zone is sent in one request. Make it one domain, not the whole `src/` tree: Jev gets less accurate as unrelated content grows (see its [known limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13)).
+- **Ask narrow questions.** One requirement per question. Multi-part questions, counting and stacked negations are answered less reliably.
+- **Markdown tables in a specification are not sent to the model yet.** Restate the rows in the question, or write the requirement as a list.
+- **`--staged` and `--diff` send only the changed hunks.** That is less context than the full files: good for fast feedback, while a full check sees everything.
+- **Real checks need a [TypeSafe API key](https://console.typesafe.ai/keys).** `jev-spec check --dry-run` validates your setup without one.
 
 ### Architecture Overview
 
 ```text
-Specification (Markdown / MDX) ──┐
-                                 ├─► [jev-spec Engine] ─► Jev System 1 ─► Calibrated Decisions & Assertions
-Implementation (Code / Git Diff) ─┘   (Root Jail + Boundary Isolation)       (Pass / Fail in <400ms)
+Specification (Markdown) ─────────┐
+                                  ├─► [jev-spec Engine] ─► Jev (System One) ─► Probabilities ─► Assertions
+Implementation (Code / Git Diff) ─┘   (Root Jail + Boundary Isolation)                          (exit code 0 / 1 / 2)
 ```
 
 1. **Context Extraction**: Parses markdown specifications using `mdast` (filtering by heading, tag, or requirement ID) and extracts source files or staged git diff hunks.
 2. **Security Isolation**: Enforces workspace root jails, symlink escape checks, git revision argument sanitization, and anti-prompt-injection boundary tagging.
-3. **Parallel Forward Pass**: Transmits shared context and rubrics to the Jev decision engine in a single batch request.
-4. **Assertion Evaluation**: Validates returned calibrated probabilities and scores against numerical thresholds, exiting with deterministic codes for CI/CD automation.
+3. **One Request per Zone**: Sends the specification, the code and every rubric of a zone to Jev in a single request.
+4. **Assertion Evaluation**: Compares the returned probabilities and scores with your thresholds and exits with `0`, `1` or `2`.
 
 ---
 
@@ -150,7 +165,7 @@ Ask one narrow question per requirement and name its ID. A question that joins s
 
 ### 3. Run Semantic Verification
 
-Set your API key and execute verification:
+Create an API key in the [TypeSafe console](https://console.typesafe.ai/keys), set it, and run the verification:
 
 ```bash
 export TYPESAFE_AI_API_KEY="your-typesafe-api-key"

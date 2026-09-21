@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- The README introduction was rewritten in all four languages. It now opens with what the tool does and an example report, explains the approach in four steps, and adds a "Know the limits" section. Figures that had no source (latency ranges, per-file LLM costs, "100x cheaper") were removed; the price, the model's properties and its limitations link to the TypeSafe documentation instead. The Quickstart links to the page where an API key is created.
+
 ### Internal
 
 - The release workflow builds the GitHub Release body from the version's section of `CHANGELOG.md` (`scripts/release-notes.mjs`). It runs before `npm publish` and stops the release when the tag does not match `package.json`, when the changelog has no section for the version, or when that section is empty. `softprops/action-gh-release` moves from `v2`, which is no longer maintained, to `v3` (Node 24 runtime, same inputs).
