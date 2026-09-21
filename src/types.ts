@@ -127,6 +127,22 @@ export interface AssertionEvaluation {
   readonly reason?: string;
 }
 
+/** What a dry run would send for a zone. Nothing in it comes from the Jev API. */
+export interface ZonePlan {
+  /** Titles of the specification sections that would be sent. */
+  readonly specSections: readonly string[];
+  /** Requirement IDs found in those sections. */
+  readonly requirementIds: readonly string[];
+  readonly specChars: number;
+  readonly codeChars: number;
+  /** Names of the rubrics that would be asked. */
+  readonly rubrics: readonly string[];
+  /** Requirement IDs of the specification that no rubric mentions: jev-spec does not verify them. */
+  readonly unreferencedRequirementIds: readonly string[];
+  /** Problems that do not stop the run but make the zone less meaningful. */
+  readonly warnings: readonly string[];
+}
+
 export interface ZoneCheckResult {
   readonly zoneName: string;
   readonly specFiles: readonly string[];
@@ -138,11 +154,15 @@ export interface ZoneCheckResult {
   /** True when the zone was not evaluated (e.g. no changed file matched its codePaths in diff mode). */
   readonly skipped?: boolean;
   readonly skipReason?: string;
+  /** Present in a dry run instead of evaluations. */
+  readonly plan?: ZonePlan;
 }
 
 export interface OverallCheckResult {
   /** True when results come from the offline mock evaluator rather than the Jev API. */
   readonly mock?: boolean;
+  /** True when nothing was evaluated: configuration, spec parsing and file matching only. */
+  readonly dryRun?: boolean;
   readonly passed: boolean;
   readonly zones: readonly ZoneCheckResult[];
   readonly totalDurationMs: number;
