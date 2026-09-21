@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- GitHub Sponsors: `.github/FUNDING.yml` and the `funding` field in `package.json` point at https://github.com/sponsors/nozomi-koborinai, so the repository shows a Sponsor button and `npm fund` lists the same URL. The four READMEs add a sponsor badge and a line in Contributing.
 - `client.model` pins the model that answers, for example `model: 'jev-1.13.0'`. Without it jev-spec asks the alias `jev-latest`, which TypeSafe moves to a newer model with every release, so a result could change without any change in the repository. `TYPESAFE_DEFAULT_MODEL` is honoured as well. Every report now prints the versioned model that answered (`Model: jev-1.13.0`; `targets[].model` in JSON), and `--dry-run` warns while the model is an alias (`warnings` at the top level of the JSON report). A `client.model` that is not a non-empty string is a configuration error (exit code `2`).
 
 ### Changed

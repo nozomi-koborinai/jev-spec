@@ -5,6 +5,7 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Bun Version](https://img.shields.io/badge/bun-%3E%3D1.2-black.svg)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Sponsor](https://img.shields.io/github/sponsors/nozomi-koborinai)](https://github.com/sponsors/nozomi-koborinai)
 
 <p align="center"><img src="./assets/hero.png" alt="jev-spec: 커밋할 때마다 명세와 코드의 어긋남을 잡아낸다" width="100%" /></p>
 
@@ -507,3 +508,5 @@ npm run lint:fix   # Biome 포맷팅과 안전한 린트 수정 적용
 ```
 
 이 프로젝트는 [MIT 라이선스](./LICENSE)에 따라 제공됩니다.
+
+jev-spec의 지속적인 개발은 [GitHub Sponsors](https://github.com/sponsors/nozomi-koborinai)에서 후원할 수 있습니다.

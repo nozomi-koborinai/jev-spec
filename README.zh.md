@@ -5,6 +5,7 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Bun Version](https://img.shields.io/badge/bun-%3E%3D1.2-black.svg)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Sponsor](https://img.shields.io/github/sponsors/nozomi-koborinai)](https://github.com/sponsors/nozomi-koborinai)
 
 <p align="center"><img src="./assets/hero.png" alt="jev-spec：在每次提交时发现规范与代码的偏离" width="100%" /></p>
 
@@ -507,3 +508,5 @@ npm run lint:fix   # 应用 Biome 的格式化与安全的 Lint 修复
 ```
 
 本项目采用 [MIT 许可证](./LICENSE) 开源。
+
+可通过 [GitHub Sponsors](https://github.com/sponsors/nozomi-koborinai) 支持 jev-spec 的持续开发。

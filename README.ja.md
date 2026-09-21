@@ -5,6 +5,7 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Bun Version](https://img.shields.io/badge/bun-%3E%3D1.2-black.svg)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Sponsor](https://img.shields.io/github/sponsors/nozomi-koborinai)](https://github.com/sponsors/nozomi-koborinai)
 
 <p align="center"><img src="./assets/hero.png" alt="jev-spec: 仕様書とコードのずれを、コミットのたびに検出する" width="100%" /></p>
 
@@ -507,3 +508,5 @@ npm run lint:fix   # Biome のフォーマットと安全なリント修正を�
 ```
 
 [MIT License](./LICENSE) のもとで公開されています。
+
+jev-spec の継続的な開発は [GitHub Sponsors](https://github.com/sponsors/nozomi-koborinai) で支援できます。
