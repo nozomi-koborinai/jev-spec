@@ -1,5 +1,9 @@
 import type { OverallCheckResult, ZoneCheckResult } from '../types.js';
 
+const MOCK_NOTICE =
+  'MOCK MODE: results come from the offline mock evaluator, not from the Jev API. ' +
+  'They validate configuration, spec parsing and file matching only.';
+
 function countSkipped(zones: readonly ZoneCheckResult[]): number {
   return zones.filter((zone) => zone.skipped).length;
 }
@@ -7,6 +11,10 @@ function countSkipped(zones: readonly ZoneCheckResult[]): number {
 export function formatTerminalReport(result: OverallCheckResult): string {
   const lines: string[] = [];
   lines.push('\n=== jev-spec Verification Report ===\n');
+
+  if (result.mock) {
+    lines.push(`${MOCK_NOTICE}\n`);
+  }
 
   for (const zone of result.zones) {
     if (zone.skipped) {
@@ -53,6 +61,11 @@ export function formatTerminalReport(result: OverallCheckResult): string {
 export function formatMarkdownReport(result: OverallCheckResult): string {
   const lines: string[] = [];
   lines.push('### 🛡️ `jev-spec` Verification Summary\n');
+
+  if (result.mock) {
+    lines.push(`> ⚠️ ${MOCK_NOTICE}\n`);
+  }
+
   lines.push('| Zone | Status | Passed Checks | Duration | Est. Cost |');
   lines.push('| :--- | :---: | :---: | :---: | :---: |');
 

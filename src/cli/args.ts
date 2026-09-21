@@ -21,6 +21,7 @@ Options:
       --diff [range]     Verify a git diff range (default: HEAD), e.g. origin/main...HEAD
   -f, --format <format>  Output format: terminal (default), markdown, json
   -o, --output <file>    Write the report to a file inside the project root
+      --mock             Use the offline mock evaluator (no API key, results are not real)
   -h, --help             Show this help
   -v, --version          Show the jev-spec version
 
@@ -74,6 +75,7 @@ export function parseCliArgs(argv: readonly string[]): ParsedCli {
   const values: Partial<Record<ValueOptionKey, string>> = {};
   let command: string | undefined;
   let staged = false;
+  let mock = false;
   let diff: string | true | undefined;
 
   for (let i = 0; i < args.length; i++) {
@@ -92,6 +94,11 @@ export function parseCliArgs(argv: readonly string[]): ParsedCli {
 
     if (arg === '--staged') {
       staged = true;
+      continue;
+    }
+
+    if (arg === '--mock') {
+      mock = true;
       continue;
     }
 
@@ -136,6 +143,7 @@ export function parseCliArgs(argv: readonly string[]): ParsedCli {
     ...(values.output !== undefined && { output: values.output }),
     ...(staged && { staged: true }),
     ...(diff !== undefined && { diff }),
+    ...(mock && { mock: true }),
   };
 
   return { kind: 'check', options };

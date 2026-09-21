@@ -147,7 +147,7 @@ bunx jev-spec check
 npx jev-spec check
 ```
 
-*(Note: pass `client: { mock: true }` in your config for offline testing and local CI simulation without an API key).*
+*(Note: run `jev-spec check --mock`, or set `client: { mock: true }` in your config, for offline testing and local CI simulation without an API key. Mock results are placeholders and every report is labelled `MOCK MODE`.)*
 
 ---
 
@@ -292,6 +292,21 @@ bunx jev-spec check --staged
 bunx jev-spec check --diff origin/main...HEAD
 ```
 
+Zones whose `codePaths` match none of the changed files are reported as `SKIPPED`: they are not sent to Jev and do not affect the exit code, so a pre-commit hook never blocks a commit that does not touch a zone.
+
+#### Offline Mock Mode, Help & Version
+
+```bash
+# Offline run without an API key (placeholder results, labelled MOCK MODE in every report)
+npx jev-spec check --mock
+
+# Usage and version (no configuration file required)
+npx jev-spec --help
+npx jev-spec --version
+```
+
+Unknown commands, unknown options, missing option values and unsupported `--format` values are rejected with exit code `2`.
+
 #### Output Formats
 
 ```bash
@@ -303,6 +318,12 @@ npx jev-spec check --format markdown --output jev-spec-report.md
 
 # Machine-readable JSON output (for custom reporting pipelines)
 npx jev-spec check --format json --output result.json
+```
+
+`--output` only accepts paths inside the project root. To publish the report to the GitHub Actions step summary (which lives outside the workspace), redirect stdout instead:
+
+```bash
+npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 ```
 
 #### CLI Exit Codes
@@ -344,7 +365,7 @@ Because Jev evaluates decisions in **sub-second time (70ms – 400ms)**, runtime
 
 1. **Untrusted Code Risk**: In public repositories, pull requests can modify `jev-spec.config.ts`, specifications, or code. Executing untrusted code with access to sensitive credentials introduces secret exfiltration vectors.
 2. **Recommended Defense-in-Depth Patterns**:
-   - **Offline Mock Mode for Fork PRs**: Run PR checks using mock mode (`client.mock = true`), validating configuration structure, spec parsing, and glob matching without exposing API credentials.
+   - **Offline Mock Mode for Fork PRs**: Run PR checks using mock mode (`jev-spec check --mock`), validating configuration structure, spec parsing, and glob matching without exposing API credentials.
    - **Environment Protection**: For live verification on external PRs, use GitHub Actions Environment Approvals so maintainers review the diff before secrets are unlocked.
    - **Main Branch Verification**: Run live semantic verification on `push` to `main` and trusted internal release branches.
 
@@ -380,23 +401,30 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Run jev-spec (Internal / Main)
-        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+      - name: Run jev-spec (Internal Pull Request / Changed Zones)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
         run: |
           npx jev-spec check \
             --diff origin/main...HEAD \
-            --format markdown \
-            --output $GITHUB_STEP_SUMMARY
+            --format markdown >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run jev-spec (Push to Main / Full Verification)
+        if: github.event_name == 'push'
+        env:
+          TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
+        run: npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run jev-spec (External Fork / Mock Mode)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
         run: |
-          npx jev-spec check \
+          npx jev-spec check --mock \
             --diff origin/main...HEAD \
             --format terminal
 ```
+
+The push step runs a full verification on purpose: on `main`, `origin/main...HEAD` is an empty range, so every zone would be skipped.
 
 ### Built-in Security Controls
 

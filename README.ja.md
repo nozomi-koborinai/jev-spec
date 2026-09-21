@@ -147,7 +147,7 @@ bunx jev-spec check
 npx jev-spec check
 ```
 
-*(補足: API キーなしでオフラインテストやローカル CI シミュレーションを行う場合は、設定で `client: { mock: true }` を渡してください)*
+*(補足: API キーなしでオフラインテストやローカル CI シミュレーションを行う場合は、`jev-spec check --mock` を実行するか、設定で `client: { mock: true }` を渡してください。モックの結果はプレースホルダであり、すべてのレポートに `MOCK MODE` と明示されます)*
 
 ---
 
@@ -292,6 +292,21 @@ bunx jev-spec check --staged
 bunx jev-spec check --diff origin/main...HEAD
 ```
 
+変更されたファイルが `codePaths` に 1 つも一致しないゾーンは `SKIPPED` として報告されます。Jev には送信されず、終了コードにも影響しないため、ゾーンに触れていないコミットを pre-commit フックが止めることはありません。
+
+#### オフライン Mock モード・ヘルプ・バージョン
+
+```bash
+# API キーなしのオフライン実行（結果はプレースホルダで、すべてのレポートに MOCK MODE と表示）
+npx jev-spec check --mock
+
+# 使い方とバージョン（設定ファイルは不要）
+npx jev-spec --help
+npx jev-spec --version
+```
+
+不明なコマンド、不明なオプション、値の欠けたオプション、未対応の `--format` 値は、終了コード `2` で拒否されます。
+
 #### 出力フォーマットの指定
 
 ```bash
@@ -303,6 +318,12 @@ npx jev-spec check --format markdown --output jev-spec-report.md
 
 # 機械可読な JSON 出力（カスタム集計パイプライン用）
 npx jev-spec check --format json --output result.json
+```
+
+`--output` に指定できるのはプロジェクトルート内のパスだけです。GitHub Actions の Step Summary（ワークスペースの外にあります）へ出力する場合は、標準出力をリダイレクトしてください。
+
+```bash
+npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 ```
 
 #### CLI 終了コード
@@ -344,7 +365,7 @@ Jev は判定を **1 秒未満（70ms〜400ms）** で評価するため、ロ�
 
 1. **信頼できないコードのリスク**: パブリックリポジトリでは、PR によって `jev-spec.config.ts`、仕様書、コードが改ざんされる可能性があります。機密性の高い認証情報へのアクセス権を持った状態で信頼できないコードを実行すると、シークレット漏洩の攻撃対象領域となります。
 2. **推奨される多層防御パターン**:
-   - **Fork PR にはオフライン Mock モードを使用**: PR チェックではモックモード（`client.mock = true`）を使用し、API 認証情報を一切公開せずに設定構造、仕様パース、glob パターンの一致を検証します。
+   - **Fork PR にはオフライン Mock モードを使用**: PR チェックではモックモード（`jev-spec check --mock`）を使用し、API 認証情報を一切公開せずに設定構造、仕様パース、glob パターンの一致を検証します。
    - **Environment Protection（環境保護ルール）**: 外部 PR でライブ検証を行う場合は、GitHub Actions の Environment Approvals を使用し、メンテナーが差分を確認・承認した後にのみシークレットが利用できるようにします。
    - **main ブランチでの検証**: `main` への push や信頼できる内部リリースのブランチに対してライブのセマンティック検証を実行します。
 
@@ -380,23 +401,30 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Run jev-spec (Internal / Main)
-        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+      - name: Run jev-spec (Internal Pull Request / Changed Zones)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
         run: |
           npx jev-spec check \
             --diff origin/main...HEAD \
-            --format markdown \
-            --output $GITHUB_STEP_SUMMARY
+            --format markdown >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run jev-spec (Push to Main / Full Verification)
+        if: github.event_name == 'push'
+        env:
+          TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
+        run: npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run jev-spec (External Fork / Mock Mode)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
         run: |
-          npx jev-spec check \
+          npx jev-spec check --mock \
             --diff origin/main...HEAD \
             --format terminal
 ```
+
+push 時のステップは意図的にフル検証を実行します。`main` 上では `origin/main...HEAD` が空の範囲になり、すべてのゾーンがスキップされてしまうためです。
 
 ### 組み込みセキュリティ防御機能
 

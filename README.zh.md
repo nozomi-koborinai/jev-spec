@@ -147,7 +147,7 @@ bunx jev-spec check
 npx jev-spec check
 ```
 
-*(提示：在配置中传入 `client: { mock: true }` 可在无 API Key 的情况下进行离线测试和本地 CI 模拟)。*
+*(提示：运行 `jev-spec check --mock`，或在配置中传入 `client: { mock: true }`，即可在无 API Key 的情况下进行离线测试和本地 CI 模拟。Mock 结果仅为占位数据，所有报告都会明确标注 `MOCK MODE`)。*
 
 ---
 
@@ -292,6 +292,21 @@ bunx jev-spec check --staged
 bunx jev-spec check --diff origin/main...HEAD
 ```
 
+如果改动的文件与某个 Zone 的 `codePaths` 完全不匹配，该 Zone 会被报告为 `SKIPPED`：不会发送给 Jev，也不影响退出码，因此 pre-commit 钩子不会拦截未涉及该 Zone 的提交。
+
+#### 离线 Mock 模式、帮助与版本
+
+```bash
+# 无需 API Key 的离线运行（结果为占位数据，所有报告均标注 MOCK MODE）
+npx jev-spec check --mock
+
+# 用法与版本（无需配置文件）
+npx jev-spec --help
+npx jev-spec --version
+```
+
+未知命令、未知选项、缺少取值的选项以及不支持的 `--format` 取值都会被拒绝，并返回退出码 `2`。
+
 #### 输出格式配置
 
 ```bash
@@ -303,6 +318,12 @@ npx jev-spec check --format markdown --output jev-spec-report.md
 
 # 机器可读的 JSON 输出（用于自定义流水线解析）
 npx jev-spec check --format json --output result.json
+```
+
+`--output` 只接受项目根目录内的路径。若要写入 GitHub Actions 的 Step Summary（位于工作区之外），请改用标准输出重定向：
+
+```bash
+npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 ```
 
 #### CLI 退出状态码
@@ -344,7 +365,7 @@ npx jev-spec check --format json --output result.json
 
 1. **不可信代码风险**：在公开开源仓库中，外部 PR 可能篡改 `jev-spec.config.ts`、规范或执行脚本。在持有高权限 API 密钥的环境下执行不可信代码存在密钥外泄风险。
 2. **推荐的纵深防御实践**：
-   - **针对 Fork PR 运行离线 Mock 模式**：在外部 PR 检查中使用 Mock 模式（`client.mock = true`），校验配置有效性、规范解析完整性及路径匹配，而不暴露任何 API 密钥。
+   - **针对 Fork PR 运行离线 Mock 模式**：在外部 PR 检查中使用 Mock 模式（`jev-spec check --mock`），校验配置有效性、规范解析完整性及路径匹配，而不暴露任何 API 密钥。
    - **Environment 审批保护**：若需对外部 PR 执行在线验证，建议使用 GitHub Actions 的 Environment Approvals 功能，由维护者审查 Diff 后再授权提供密钥。
    - **针对 Main 主分支在线验证**：在 `push` 至 `main` 分支及受信内部发布分支上运行完整的真实语义校验。
 
@@ -380,23 +401,30 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Run jev-spec (Internal / Main)
-        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+      - name: Run jev-spec (Internal Pull Request / Changed Zones)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
         run: |
           npx jev-spec check \
             --diff origin/main...HEAD \
-            --format markdown \
-            --output $GITHUB_STEP_SUMMARY
+            --format markdown >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run jev-spec (Push to Main / Full Verification)
+        if: github.event_name == 'push'
+        env:
+          TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
+        run: npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run jev-spec (External Fork / Mock Mode)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
         run: |
-          npx jev-spec check \
+          npx jev-spec check --mock \
             --diff origin/main...HEAD \
             --format terminal
 ```
+
+push 步骤有意执行完整校验：在 `main` 分支上 `origin/main...HEAD` 是空区间，所有 Zone 都会被跳过。
 
 ### 内置纵深安全防御机制
 
