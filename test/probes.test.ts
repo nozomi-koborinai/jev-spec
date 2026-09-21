@@ -24,8 +24,8 @@ async function codePathsByRequirement(): Promise<Map<string, readonly string[]>>
   const config = await loadConfig(undefined, pkgRoot);
   const byRequirement = new Map<string, readonly string[]>();
   for (const target of Object.values(config.targets)) {
-    for (const rubric of Object.values(target.rubrics)) {
-      const id = REQUIREMENT_ID.exec(rubricText(rubric))?.[0];
+    for (const [name, rubric] of Object.entries(target.rubrics)) {
+      const id = REQUIREMENT_ID.exec(`${name}\n${rubricText(rubric)}`)?.[0];
       if (id) {
         byRequirement.set(id, target.codePaths);
       }

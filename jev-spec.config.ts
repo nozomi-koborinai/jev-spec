@@ -3,12 +3,27 @@ import { defineConfig, noul } from 'jev-spec';
 // jev-spec checks itself. The specs under docs/specs/ are normative (see AGENTS.md), and each
 // target pairs one group of requirements with the one to three files that implement it.
 //
-// One rubric per requirement, and the question restates the requirement, so the model does not
-// have to look the ID up. A requirement that forbids something is asked as a violation.
+// Every rubric is named after the requirement it checks. How the questions are written comes from
+// the live runs recorded in docs/probe-results.md, where each wording was tried on the intact code
+// and on a copy that test/probes/ had broken:
+// - Ask directly and literally about the mechanism ("does the validation add an issue when ...").
+//   "Does the code satisfy REQ-X: <requirement>?" was answered "yes" for broken code too: the
+//   restated requirement reads like a claim, and the model is sensitive to claims.
+// - Keep the requirement ID out of the question. The name of a rubric is not sent to the model.
+// - One behaviour per question, and say which part of the code is meant when there are two
+//   similar ones.
+// - Keep the code of a target small. The same question separated intact from broken code less
+//   well when an unrelated file was sent along.
+// - Asking whether something forbidden happens works well for some requirements and not at all
+//   for others, so try it on a probe instead of assuming it.
 //
-// The thresholds are starting points. No live run has tuned them yet.
+// Thresholds: to the questions that should be answered "yes", intact code scored 0.90 or more and
+// broken code 0.73 or less; to those that should be answered "no", 0.06 or less and 0.94 or more.
+// An answer about intact code moved by at most 0.03 between identical runs. An uncertain answer
+// about broken code moved by as much as 0.4, which is why the threshold sits nearer to the intact
+// scores.
 const MET = { minProbability: 0.85 } as const;
-const NOT_VIOLATED = { maxProbability: 0.15 } as const;
+const NOT_VIOLATED = { maxProbability: 0.3 } as const;
 
 export default defineConfig({
   client: { model: 'jev-1.13.0' },
@@ -18,82 +33,89 @@ export default defineConfig({
       specPath: 'docs/specs/exit-codes.md',
       codePaths: ['bin/jev-spec.js', 'src/cli/main.ts', 'src/cli/commands/check.ts'],
       rubrics: {
-        passExitsWithZero: noul(
-          'Does the code satisfy REQ-EXIT-01: when every target that was checked passes, the check command exits with code 0?'
+        'REQ-EXIT-01': noul(
+          'When every target that was checked passes, does the check command return exit code 0?'
         ),
-        violationExitsWithOne: noul(
-          'Does the code satisfy REQ-EXIT-02: when at least one assertion of a checked target is violated, the check command exits with code 1?'
+        'REQ-EXIT-02': noul(
+          'When at least one assertion of a checked target is violated, does the check command return exit code 1?'
         ),
-        errorExitsWithTwo: noul(
-          'Does the code satisfy REQ-EXIT-03: when a run cannot be carried out, including after an unexpected internal error, the command prints the error and exits with code 2?'
+        'REQ-EXIT-03': noul(
+          'When the check command catches an error, does it print the error and return exit code 2?'
         ),
-        helpAndVersionNeedNoConfig: noul(
-          'Does the code satisfy REQ-EXIT-04: --help and --version print their output and exit with code 0 without loading a configuration file?'
+        'REQ-EXIT-04': noul(
+          'Do --help and --version print their output and return exit code 0 before any configuration file is loaded?'
         ),
       },
       assertions: {
-        passExitsWithZero: MET,
-        violationExitsWithOne: MET,
-        errorExitsWithTwo: MET,
-        helpAndVersionNeedNoConfig: MET,
+        'REQ-EXIT-01': MET,
+        'REQ-EXIT-02': MET,
+        'REQ-EXIT-03': MET,
+        'REQ-EXIT-04': MET,
       },
     },
 
     configuration: {
-      description: 'A mistake in the configuration stops the run',
+      description: 'A mistake in the configuration is rejected',
       specPath: 'docs/specs/fail-closed.md',
       specFilter: { requirementPrefix: 'REQ-CONFIG-' },
-      codePaths: ['src/config-validation.ts', 'src/runner/engine.ts'],
+      codePaths: ['src/config-validation.ts'],
       rubrics: {
-        needsATarget: noul(
-          'Does the code satisfy REQ-CONFIG-01: a configuration that declares no target is rejected?'
+        'REQ-CONFIG-01': noul(
+          'Does the validation add an issue when the targets object of a configuration has no keys?'
         ),
-        assertionBelongsToRubric: noul(
-          'Does the code satisfy REQ-CONFIG-02: an assertion whose key is not the name of a rubric of the same target is rejected?'
+        'REQ-CONFIG-02': noul(
+          'Does the validation add an issue for an assertion whose key is not the name of a rubric of the same target?'
         ),
-        optionsFitRubricType: noul(
-          'Does the code satisfy REQ-CONFIG-03: an assertion option that does not belong to the type of its rubric, such as a score threshold on a yes/no rubric, is rejected?'
+        'REQ-CONFIG-03': noul(
+          'Does the validation add an issue for every assertion key that is not in the list of options allowed for the type of its rubric?'
         ),
-        thresholdsInRange: noul(
-          'Does the code satisfy REQ-CONFIG-04: a probability or confidence threshold outside the range from 0 to 1 is rejected, and so is a score threshold outside the levels of its rubric?'
+        'REQ-CONFIG-04': noul(
+          'Does the condition that rejects a threshold test whether the value is below the minimum or above the maximum?'
         ),
-        reportsEveryProblem: noul(
-          'Does the code satisfy REQ-CONFIG-05: validation collects every problem it finds and reports them together, each with the path of the offending entry in the configuration?'
-        ),
-        validatesFirst: noul(
-          'Does the code satisfy REQ-CONFIG-06: a run validates the configuration before it reads a spec, reads code or creates the client of the API?'
+        'REQ-CONFIG-05': noul(
+          'Does the validation collect every issue it finds and throw one error that lists all of them?'
         ),
       },
       assertions: {
-        needsATarget: MET,
-        assertionBelongsToRubric: MET,
-        optionsFitRubricType: MET,
-        thresholdsInRange: MET,
-        reportsEveryProblem: MET,
-        validatesFirst: MET,
+        'REQ-CONFIG-01': MET,
+        'REQ-CONFIG-02': MET,
+        'REQ-CONFIG-03': MET,
+        'REQ-CONFIG-04': MET,
+        'REQ-CONFIG-05': MET,
+      },
+    },
+
+    run: {
+      description: 'A run validates before it does anything else',
+      specPath: 'docs/specs/fail-closed.md',
+      specFilter: { requirementPrefix: 'REQ-RUN-' },
+      codePaths: ['src/runner/engine.ts'],
+      rubrics: {
+        'REQ-RUN-01': noul(
+          'Does a run validate the configuration before it reads a spec, reads code or creates the client of the API?'
+        ),
+      },
+      assertions: {
+        'REQ-RUN-01': MET,
       },
     },
 
     answers: {
-      description: 'An answer that cannot be read fails the check',
+      description: 'An answer that cannot be read fails its assertion',
       specPath: 'docs/specs/fail-closed.md',
       specFilter: { requirementPrefix: 'REQ-ANSWER-' },
-      codePaths: ['src/runner/assertion-runner.ts', 'src/runner/engine.ts'],
+      codePaths: ['src/runner/assertion-runner.ts'],
       rubrics: {
-        nonFiniteFails: noul(
-          'Does the code satisfy REQ-ANSWER-01: when the probability, the confidence or the score of an answer is not a finite number, the assertion on that answer fails?'
+        'REQ-ANSWER-01': noul(
+          'When the probability, the confidence or the score of an answer is not a finite number, does the assertion on that answer fail?'
         ),
-        missingAnswerFails: noul(
-          'Does the code satisfy REQ-ANSWER-02: when the evaluator returns no answer for a rubric, the check of that target fails?'
-        ),
-        noAssertionIsInformational: noul(
-          'Does the code satisfy REQ-ANSWER-03: a rubric that has no assertion is reported with its answer and does not affect whether the check passes?'
+        'REQ-ANSWER-03': noul(
+          'When a rubric has no assertion, is its evaluation recorded as passed?'
         ),
       },
       assertions: {
-        nonFiniteFails: MET,
-        missingAnswerFails: MET,
-        noAssertionIsInformational: MET,
+        'REQ-ANSWER-01': MET,
+        'REQ-ANSWER-03': MET,
       },
     },
 
@@ -103,24 +125,24 @@ export default defineConfig({
       specFilter: { requirementPrefix: 'REQ-PATH-' },
       codePaths: ['src/context/path-security.ts', 'src/context/glob-matcher.ts'],
       rubrics: {
-        resolvesInsideRoot: noul(
-          'Does the code satisfy REQ-PATH-01: a path is accepted only when its real path, with symbolic links resolved, lies inside the project root, and any other path is rejected with an error?'
+        'REQ-PATH-01': noul(
+          'Does the asynchronous function that resolves a path with realpath throw an error when the resolved path lies outside the project root?'
         ),
-        globsStayRelative: noul(
-          'Does the code satisfy REQ-PATH-02: a glob pattern that is absolute, or that contains a ".." segment, is rejected before any file is matched?'
+        'REQ-PATH-02': noul(
+          'Is a glob pattern that is absolute, or that contains a ".." segment, rejected with an error before any file is matched?'
         ),
-        followsSymlinks: noul(
-          'Does the code violate REQ-PATH-03 by following symbolic links while it matches files against glob patterns?'
+        'REQ-PATH-03': noul(
+          'Are symbolic links followed while files are matched against glob patterns?'
         ),
-        excludesSecrets: noul(
-          'Does the code satisfy REQ-PATH-04: environment files, the .git directory and private key files are excluded from every match, whatever the patterns of a target say?'
+        'REQ-PATH-04': noul(
+          'In the function that resolves glob patterns against the file system, does the ignore list start with the default patterns for environment files, the .git directory and private key files?'
         ),
       },
       assertions: {
-        resolvesInsideRoot: MET,
-        globsStayRelative: MET,
-        followsSymlinks: NOT_VIOLATED,
-        excludesSecrets: MET,
+        'REQ-PATH-01': MET,
+        'REQ-PATH-02': MET,
+        'REQ-PATH-03': NOT_VIOLATED,
+        'REQ-PATH-04': MET,
       },
     },
 
@@ -130,20 +152,16 @@ export default defineConfig({
       specFilter: { requirementPrefix: 'REQ-GIT-' },
       codePaths: ['src/context/git-revision.ts', 'src/context/git-diff.ts'],
       rubrics: {
-        startsGitThroughShell: noul(
-          'Does the code violate REQ-GIT-01 by starting git through a shell, or by building a shell command line from its arguments?'
+        'REQ-GIT-01': noul(
+          'Is git started through a shell, or is a shell command line built from its arguments?'
         ),
-        validatesRevisionRange: noul(
-          'Does the code satisfy REQ-GIT-02: a revision range that is empty, that starts with "-", or that contains a character outside letters, digits and the punctuation of git revisions is rejected before git is started?'
-        ),
-        rangeIsNotAnOption: noul(
-          'Does the code satisfy REQ-GIT-03: the revision range is passed to git after "--end-of-options" and is followed by "--"?'
+        'REQ-GIT-03': noul(
+          'Is the revision range passed to git after "--end-of-options" and followed by "--"?'
         ),
       },
       assertions: {
-        startsGitThroughShell: NOT_VIOLATED,
-        validatesRevisionRange: MET,
-        rangeIsNotAnOption: MET,
+        'REQ-GIT-01': NOT_VIOLATED,
+        'REQ-GIT-03': MET,
       },
     },
   },

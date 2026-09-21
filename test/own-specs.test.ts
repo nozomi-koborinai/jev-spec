@@ -97,8 +97,9 @@ describe("jev-spec's own specs", () => {
     expect(ids.length > 0).toBe(true);
 
     const config = await loadConfig(undefined, pkgRoot);
+    // A rubric names its requirement in its name (preferred) or in its text.
     const rubricTexts = Object.values(config.targets).flatMap((target) =>
-      Object.values(target.rubrics).map(rubricText)
+      Object.entries(target.rubrics).map(([name, rubric]) => `${name}\n${rubricText(rubric)}`)
     );
 
     const testFiles = (await fs.readdir(testsDir)).filter((name) => name.endsWith('.test.ts'));

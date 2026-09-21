@@ -26,10 +26,6 @@ Environment files, the `.git` directory and private key files are excluded from 
 
 git is started as a program with its arguments passed as a list. No shell command line is built from them.
 
-### REQ-GIT-02: A revision range is validated before git is started
-
-A revision range that is empty, that starts with `-`, or that contains a character outside letters, digits and the punctuation of git revisions is rejected before git is started.
-
 ### REQ-GIT-03: A revision range cannot be read as an option or as a path
 
 The revision range is passed to git after `--end-of-options` and is followed by `--`.
