@@ -38,12 +38,19 @@ function rubricText(rubric: AnyRubric): string {
   return [rubric.description, ...rubric.levels].join('\n');
 }
 
-/** Requirement IDs of the specification that no rubric mentions. jev-spec does not check them. */
+/**
+ * Requirement IDs of the specification that no rubric mentions. jev-spec does not check them.
+ *
+ * A rubric mentions a requirement in its name or in its text. The name is the better place: it is
+ * never sent to the model, and an ID inside a question is noise for the model.
+ */
 function findUnreferencedRequirementIds(
   requirementIds: readonly string[],
   rubrics: Readonly<Record<string, AnyRubric>>
 ): string[] {
-  const text = Object.values(rubrics).map(rubricText).join('\n');
+  const text = Object.entries(rubrics)
+    .map(([name, rubric]) => `${name}\n${rubricText(rubric)}`)
+    .join('\n');
   // Whole-ID match: REQ-AUTH-1 must not count as named by a rubric that mentions REQ-AUTH-10.
   return requirementIds.filter((id) => {
     const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

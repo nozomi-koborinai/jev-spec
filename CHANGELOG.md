@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- `--dry-run` counts a requirement as covered when a rubric is **named** after it (`'REQ-AUTH-02': noul('…')`), not only when its ID appears in the question. The name of a rubric is never sent to the model, and in our measurements an ID inside the question made the model less able to tell intact code from broken code.
 - New tagline, "Catch spec drift on every commit.", in the four READMEs, in the package description and in the hero image. The previous one, "Unit tests for your specs.", read as if the spec were the thing under test, and a unit test is deterministic while a check is a probability compared with a threshold. The hero image is now a real PNG (the old file was a JPEG with a `.png` name) and can be rendered again from `assets/hero.html`.
 - The README introduction was rewritten in all four languages. It now opens with what the tool does and an example report, explains the approach in four steps, and adds a "Know the limits" section. Figures that had no source (latency ranges, per-file LLM costs, "100x cheaper") were removed; the price, the model's properties and its limitations link to the TypeSafe documentation instead. The Quickstart links to the page where an API key is created.
 - The README states that jev-spec is an independent open-source project, not affiliated with or endorsed by TypeSafe AI, and asks for problems to be reported in this repository.
