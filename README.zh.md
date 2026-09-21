@@ -494,7 +494,6 @@ push 步骤有意执行完整检查：在 `main` 分支上 `origin/main...HEAD` 
 | **Base URL SSRF 防御** | 默认情况下，请求严格限定在官方 TypeSafe AI 域名（`https://api.typesafe.ai`）。除非显式设置 `allowCustomBaseUrl: true`，否则拒绝所有自定义 API 地址，杜绝内网探测与 SSRF 风险。 |
 | **资源耗尽保护** | 限制单次扫描最多 500 个文件，单个文件体积上限 2MB，并对单次评估 Prompt 执行严格的字符截断，防止 DoS 攻击与内存耗尽。 |
 
-关于漏洞报告与安全政策的详细信息，请参阅 [SECURITY.md](./SECURITY.md)。
 
 ---
 
