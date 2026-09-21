@@ -6,11 +6,11 @@
 [![Bun Version](https://img.shields.io/badge/bun-%3E%3D1.2-black.svg)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-<p align="center"><img src="./assets/hero.png" alt="jev-spec - Specification-Driven Semantic Verification Engine" width="100%" /></p>
+<p align="center"><img src="./assets/hero.png" alt="jev-spec: catch spec drift on every commit" width="100%" /></p>
 
 🌐 [日本語](README.ja.md) | [简体中文](README.zh.md) | [한국어](README.ko.md)
 
-**Unit tests for your specs.** `jev-spec` checks your code against the requirements in your Markdown specification and fails the build when they drift apart. It asks [TypeSafe AI's Jev model](https://docs.typesafe.ai) one focused question per requirement, gets a probability back, and compares it with a threshold you set. That makes it small enough for a pre-commit hook and strict enough for a CI gate.
+**Catch spec drift on every commit.** `jev-spec` checks your code against the requirements in your Markdown specification and fails the build when they drift apart. It asks [TypeSafe AI's Jev model](https://docs.typesafe.ai) one focused question per requirement, gets a probability back, and compares it with a threshold you set. That makes it small enough for a pre-commit hook and strict enough for a CI gate.
 
 ```text
 $ npx jev-spec check

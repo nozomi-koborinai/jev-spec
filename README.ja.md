@@ -6,11 +6,11 @@
 [![Bun Version](https://img.shields.io/badge/bun-%3E%3D1.2-black.svg)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-<p align="center"><img src="./assets/hero.png" alt="jev-spec - Specification-Driven Semantic Verification Engine" width="100%" /></p>
+<p align="center"><img src="./assets/hero.png" alt="jev-spec: 仕様書とコードのずれを、コミットのたびに検出する" width="100%" /></p>
 
 🌐 [English](README.md) | [简体中文](README.zh.md) | [한국어](README.ko.md)
 
-**仕様書に対するユニットテスト。** `jev-spec` は、Markdown の仕様書に書かれた要件とコードを照合し、両者がずれたらビルドを失敗させます。要件ごとに焦点を絞った質問を 1 つずつ [TypeSafe AI の Jev モデル](https://docs.typesafe.ai)に投げ、返ってきた確率を、あなたが決めたしきい値と比べます。pre-commit フックに収まる軽さと、CI のゲートに使える厳密さを両立します。
+**仕様書とコードのずれを、コミットのたびに検出する。** `jev-spec` は、Markdown の仕様書に書かれた要件とコードを照合し、両者がずれたらビルドを失敗させます。要件ごとに焦点を絞った質問を 1 つずつ [TypeSafe AI の Jev モデル](https://docs.typesafe.ai)に投げ、返ってきた確率を、あなたが決めたしきい値と比べます。pre-commit フックに収まる軽さと、CI のゲートに使える厳密さを両立します。
 
 ```text
 $ npx jev-spec check

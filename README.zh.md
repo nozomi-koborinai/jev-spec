@@ -6,11 +6,11 @@
 [![Bun Version](https://img.shields.io/badge/bun-%3E%3D1.2-black.svg)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-<p align="center"><img src="./assets/hero.png" alt="jev-spec - Specification-Driven Semantic Verification Engine" width="100%" /></p>
+<p align="center"><img src="./assets/hero.png" alt="jev-spec：在每次提交时发现规范与代码的偏离" width="100%" /></p>
 
 🌐 [English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
-**为你的规范文档编写的单元测试。** `jev-spec` 将代码与 Markdown 规范文档中的需求逐条比对，一旦两者出现偏离，就让构建失败。它针对每条需求向 [TypeSafe AI 的 Jev 模型](https://docs.typesafe.ai)提出一个聚焦的问题，拿到一个概率，再与你设定的阈值比较。它足够轻量，可以放进 pre-commit 钩子；也足够严格，可以作为 CI 门禁。
+**在每次提交时发现规范与代码的偏离。** `jev-spec` 将代码与 Markdown 规范文档中的需求逐条比对，一旦两者出现偏离，就让构建失败。它针对每条需求向 [TypeSafe AI 的 Jev 模型](https://docs.typesafe.ai)提出一个聚焦的问题，拿到一个概率，再与你设定的阈值比较。它足够轻量，可以放进 pre-commit 钩子；也足够严格，可以作为 CI 门禁。
 
 ```text
 $ npx jev-spec check

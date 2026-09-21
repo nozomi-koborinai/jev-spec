@@ -6,11 +6,11 @@
 [![Bun Version](https://img.shields.io/badge/bun-%3E%3D1.2-black.svg)](https://bun.sh/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-<p align="center"><img src="./assets/hero.png" alt="jev-spec - Specification-Driven Semantic Verification Engine" width="100%" /></p>
+<p align="center"><img src="./assets/hero.png" alt="jev-spec: 커밋할 때마다 명세와 코드의 어긋남을 잡아낸다" width="100%" /></p>
 
 🌐 [English](README.md) | [日本語](README.ja.md) | [简体中文](README.zh.md)
 
-**명세를 위한 단위 테스트.** `jev-spec`은 Markdown 명세에 적힌 요구 사항과 코드를 대조하고, 둘이 어긋나면 빌드를 실패시킵니다. 요구 사항마다 초점을 좁힌 질문 하나를 [TypeSafe AI의 Jev 모델](https://docs.typesafe.ai)에 던지고, 돌아온 확률을 여러분이 정한 임계값과 비교합니다. pre-commit 훅에 넣을 만큼 가볍고, CI 게이트로 쓸 만큼 엄격합니다.
+**커밋할 때마다 명세와 코드의 어긋남을 잡아낸다.** `jev-spec`은 Markdown 명세에 적힌 요구 사항과 코드를 대조하고, 둘이 어긋나면 빌드를 실패시킵니다. 요구 사항마다 초점을 좁힌 질문 하나를 [TypeSafe AI의 Jev 모델](https://docs.typesafe.ai)에 던지고, 돌아온 확률을 여러분이 정한 임계값과 비교합니다. pre-commit 훅에 넣을 만큼 가볍고, CI 게이트로 쓸 만큼 엄격합니다.
 
 ```text
 $ npx jev-spec check
