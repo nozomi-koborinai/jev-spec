@@ -1,6 +1,10 @@
 import { loadSpec } from '../parser/markdown-parser.js';
 import { extractCodeContext } from '../context/code-extractor.js';
-import { createJevEvaluator, type JevEvaluator } from '../evaluator/jev-evaluator.js';
+import {
+  createJevEvaluator,
+  MockJevEvaluator,
+  type JevEvaluator,
+} from '../evaluator/jev-evaluator.js';
 import { assertRubric } from './assertion-runner.js';
 import type {
   AnyRubric,
@@ -113,6 +117,7 @@ export async function runVerification(
   const totalCost = zoneResults.reduce((acc, z) => acc + z.estimatedCostUsd, 0);
 
   return {
+    ...(evaluator instanceof MockJevEvaluator && { mock: true }),
     passed: overallPassed,
     zones: zoneResults,
     totalDurationMs: totalDuration,

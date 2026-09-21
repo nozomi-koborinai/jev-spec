@@ -132,6 +132,8 @@ export interface ZoneCheckResult {
 }
 
 export interface OverallCheckResult {
+  /** True when results come from the offline mock evaluator rather than the Jev API. */
+  readonly mock?: boolean;
   readonly passed: boolean;
   readonly zones: readonly ZoneCheckResult[];
   readonly totalDurationMs: number;

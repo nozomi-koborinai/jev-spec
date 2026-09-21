@@ -11,6 +11,8 @@ export interface CheckCliOptions {
   readonly output?: string;
   readonly staged?: boolean;
   readonly diff?: string | boolean;
+  /** Forces the offline mock evaluator regardless of the configuration file. */
+  readonly mock?: boolean;
   readonly cwd?: string;
 }
 
@@ -40,7 +42,14 @@ function resolveGitDiffOptions(options: CheckCliOptions) {
 export async function checkCommand(options: CheckCliOptions = {}): Promise<number> {
   try {
     const cwd = options.cwd ?? process.cwd();
-    const config = await loadConfig(options.config, cwd);
+    // Validate the report destination up front so a bad path never costs an evaluation.
+    const outputPath = options.output ? await assertInsideRoot(cwd, options.output) : undefined;
+
+    const loadedConfig = await loadConfig(options.config, cwd);
+    const config = options.mock
+      ? { ...loadedConfig, client: { ...loadedConfig.client, mock: true } }
+      : loadedConfig;
+
     const result = await runVerification(config, {
       cwd,
       zone: options.zone,
@@ -58,8 +67,7 @@ export async function checkCommand(options: CheckCliOptions = {}): Promise<numbe
       outputText = formatTerminalReport(result);
     }
 
-    if (options.output) {
-      const outputPath = await assertInsideRoot(cwd, options.output);
+    if (outputPath) {
       await fs.writeFile(outputPath, `${outputText}\n`, 'utf-8');
     } else {
       console.log(outputText);
