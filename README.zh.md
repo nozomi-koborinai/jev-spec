@@ -10,61 +10,76 @@
 
 🌐 [English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
-**基于 TypeSafe AI Jev 构建的 AI 代码与规范语义验证引擎（面向规范驱动开发）**
+**为你的规范文档编写的单元测试。** `jev-spec` 将代码与 Markdown 规范文档中的需求逐条比对，一旦两者出现偏离，就让构建失败。它针对每条需求向 [TypeSafe AI 的 Jev 模型](https://docs.typesafe.ai)提出一个聚焦的问题，拿到一个概率，再与你设定的阈值比较。它足够轻量，可以放进 pre-commit 钩子；也足够严格，可以作为 CI 门禁。
+
+```text
+$ npx jev-spec check
+
+=== jev-spec Verification Report ===
+
+Zone: auth [✖ FAILED]
+  Spec files: docs/specs/auth.md
+  Code files: src/auth/session.ts
+    ✔ verifiesSessionTokens: probability: 0.97
+    ✖ rejectsRevokedTokens: probability: 0.08
+       └─ Violation: Probability 0.08 is below minimum threshold 0.85
+    ✔ introducesUnspecifiedBehavior: probability: 0.03
+
+Overall: ✖ VERIFICATION FAILED
+
+$ echo $?
+1
+```
+
+*报告示例。版式与 CLI 的实际输出一致（省略了耗时与成本两行），其中的概率数值仅为示意。*
 
 ---
 
-## 为什么选择 jev-spec？填补语义鸿沟
+## 为什么选择 jev-spec？
 
-在规范驱动开发（SDD: Specification-Driven Development）与 AI 辅助编程工作流（Cursor、智能编码 Agent、GitHub Copilot）中，传统的结构检查工具可以确定性地校验 Markdown 结构、标题层级、交叉引用以及需求 ID。然而，静态语法检查工具无法跨越代码与规范之间的**语义鸿沟（Semantic Gap）**：
+Linter 和 schema 校验可以告诉你 `REQ-AUTH-02` 存在、格式正确，并且被正确引用。但它们无法告诉你，代码是否真的做到了 `REQ-AUTH-02` 所要求的事。在 AI 辅助开发中，这道鸿沟会越来越宽，因为代码变化的速度远快于人们重读规范的速度：
 
-- *`src/auth/session.ts` 是否真正满足了 `REQ-AUTH-02` 中规定的功能性验收标准？*
-- *AI 助手是否悄悄引入了未声明的副作用、未授权的绕过 Header 或未经文档记录的隐蔽端点？*
-- *当前 Pull Request 是一个功能完整的真实实现，还是仅包含 TODO 注释的乐观桩代码（Stub）？*
+- *`src/auth/session.ts` 现在还满足 `REQ-AUTH-02` 吗？*
+- *助手有没有悄悄加入无人指定的绕过请求头或接口？*
+- *这个 Pull Request 是完整的实现，还是带着乐观注释的空壳？*
 
-### 自回归生成式 LLM 的困境：使用自由文本生成进行代码验证
+你可以把这些问题写进提示词，交给通用大模型。但那样你得解析自然语言，回答的形式每次运行都可能不同，而且要为生成的每个 token 付费。把构建的成败押在这上面并不合适。
 
-以往，评估语义合规性通常依赖针对自回归生成式语言模型的提示词工程（Prompt Engineering）：
+### jev-spec 的做法
 
-- **高延迟**：逐 Token 的顺序生成导致单个文件的审查耗时长达 **5 至 15 秒**。
-- **高昂成本**：自回归解码导致单次文件评估消耗 **$0.05 至 $0.20+**。
-- **非确定性漂移**：脆弱的 Prompt 模板、幻觉推理、JSON 解析失败，以及多次执行之间的主观结果漂移。
-- **工作流摩擦**：速度过慢，无法应用于 Git pre-commit 钩子、暂存区 Diff 审查或快速阻断式 CI 门禁。
+1. **你写的是问题，而不是提示词。** 每条需求对应一个是/否问题（`noul`）。当某个判断需要时，还可以使用分类（`choice`）和分级（`score`）Rubric。它们都写在带类型的 `jev-spec.config.ts` 中。
+2. **Jev 用数字作答。** Jev 是一个 [System One 模型](https://docs.typesafe.ai/concepts/system-one)：它不生成文本。它只读取一次规范和代码，并在同一个请求中为每个问题返回一个概率。TypeSafe 以[校准概率](https://docs.typesafe.ai/introduction/machine-learning-primer)为目标训练它，阈值因此才有意义。
+3. **由阈值做决定。** `minProbability: 0.85`、`maxProbability: 0.15`、`allowedChoices`、`minScore`：都是简单的数值比较，并使用标准退出码（`0` 通过，`1` 失败，`2` 配置有误）。
+4. **便宜到可以每次提交都运行。** Jev 只按输入 token 计费，[每百万 token $0.042](https://docs.typesafe.ai/models)，输出免费，因此检查一个 Zone 的成本不到一美分，每份报告都会给出估算值。TypeSafe 自己公布了与通用大模型的[速度与成本对比](https://typesafe.ai)。
 
-### Jev 的核心优势：超越自由文本生成的结构化决策原语
-
-在光学物理中，**准直器（Collimator）** 能够将发散杂乱的光束校准为高度平行的聚集光束。`jev-spec` 正是软件工程中的语义准直器：将 AI 编程模型产生的高熵、发散输出，校准收敛为具备数学校准精度的确定性验证决策。
-
-`jev-spec` 基于 **TypeSafe AI Jev** 构建，摒弃了逐 Token 的自由文本生成架构，直接建立在结构化决策原语之上：
-
-- **结构化决策原语**：Jev 不在无约束空间中逐 Token 吐出自然语言或 JSON 字符串，而是在单次前向传播中，基于共享的规范与代码上下文，直接预测类型化决策原语（`noul`、`choice`、`score`）的校准概率分布。
-- **低于 400ms 的超高速验证**：单次前向传播评估仅需 **70ms 至 400ms**。
-- **极致的成本效益**：输入 Token 每百万仅需 **$0.042**（输出 Token 免费）——比生成式 Review 便宜 100 倍以上。
-- **严格的数学校准（Empirical Calibration）**：评估通过“校准决策强化学习”（RLCD: Reinforcement Learning for Calibrated Decisions）训练的类型化决策原语。预测概率为 0.85 意味着该命题在经验统计上有 85% 的概率为真。
-- **并行采样器**：在单次前向传播中，针对共享的规范与实现代码，同时评估布尔命题（`noul`）、类别分布（`choice`）与有序等级（`score`）。
-- **确定性数值断言**：在终端、pre-commit 钩子或 CI 流水线中，直接通过数值阈值（`minProbability`、`maxProbability`、`allowedChoices`、`minScore`）进行语义断言，并返回标准退出码。
-
-| 核心维度 | 自回归 LLM 提示词评审 | jev-spec + Jev（决策原语） |
+| | 向通用大模型发提示词 | jev-spec 与 Jev |
 | :--- | :--- | :--- |
-| **执行速度** | 单文件 5,000ms – 15,000ms | **70ms – 400ms**（单次前向传播） |
-| **Token 资费** | 约 $3.00 – $15.00 / MTok | **$0.042 / MTok**（输出 Token 完全免费） |
-| **评估模式** | 逐 Token 的自由文本 / JSON 顺序解码 | **针对类型化决策原语的单次前向传播** |
-| **输出形式** | 非结构化自然语言或待解析 JSON 字符串 | **校准概率分布与分类概率分布** |
-| **确定性** | 主观推理过程与格式解析漂移 | **严格的数值阈值（如 `minProbability: 0.85`）** |
-| **Git 钩子与快速 CI** | 无法落地（严重打断开发节奏） | **即时执行（Bun 冷启动 <100ms）** |
+| **返回的内容** | 需要解析的自然语言或 JSON | 每个问题对应一个概率、选项或分值 |
+| **如何据此拦截** | 解析文本，并寄希望于格式不变 | 数值阈值与退出码 |
+| **付费对象** | 输入 token 与生成的输出 token | 仅输入 token |
+| **适用场景** | 异步评审 | pre-commit 钩子与阻断式 CI 检查 |
+
+### 需要了解的局限
+
+- **概率不是证明。** jev-spec 告诉你的是：代码很可能已经偏离了某条需求。它是测试与评审的补充，不能替代其中任何一个。在信任阈值之前，请先用你自己的代码进行校准。
+- **让 Zone 保持小而专。** 一个 Zone 在一次请求中发送。请让它只覆盖一个领域，而不是整个 `src/` 目录：无关内容越多，Jev 的准确度越低（参见其[已知局限](https://docs.typesafe.ai/model-jaggedness/jev-1.13)）。
+- **问题要窄。** 一个问题只问一条需求。包含多个条件、需要计数或多重否定的问题，回答的可靠性会下降。
+- **规范中的 Markdown 表格目前不会发送给模型。** 请在问题中复述表格行的内容，或者把需求写成列表。
+- **`--staged` 与 `--diff` 只发送发生变更的代码块（hunk）。** 上下文比完整文件少：适合快速反馈，而完整检查能看到全部内容。
+- **真实检查需要 [TypeSafe API Key](https://console.typesafe.ai/keys)。** `jev-spec check --dry-run` 无需 Key 即可校验你的配置。
 
 ### 架构概览
 
 ```text
-规范文档 (Markdown / MDX) ──────┐
-                               ├─► [jev-spec 引擎] ─► Jev 决策模型 ─► 校准决策与数值断言
-实现代码 (Code / Git Diff) ────┘   (Root Jail 沙箱 + 边界隔离)        (<400ms 内完成通过/阻断判定)
+规范文档 (Markdown) ────────────┐
+                               ├─► [jev-spec 引擎] ─► Jev (System One) ─► 概率 ─► 数值断言
+实现代码 (Code / Git Diff) ────┘   (Root Jail 沙箱 + 边界隔离)                  (退出码 0 / 1 / 2)
 ```
 
 1. **上下文提取**：使用 `mdast` 解析 Markdown 规范文档（按标题、标签或需求 ID 进行精准过滤），并提取目标源文件或 Git 暂存区 Diff 代码块。
 2. **安全隔离**：强制执行工作区 Root Jail（防路径穿越）、符号链接越界检查、Git Revision 参数安全校验，以及防 Prompt 注入的边界标签隔离。
-3. **并行前向传播**：将共享上下文和评估准则以单个批处理请求发送至 Jev 决策引擎。
-4. **断言判定**：将返回的校准概率和分值与预设数值阈值进行比对，以确定性状态码退出，无缝接入 CI/CD 自动化。
+3. **每个 Zone 一次请求**：将该 Zone 的规范、代码以及全部 Rubric 在一次请求中发送给 Jev。
+4. **断言判定**：将返回的概率与分值同你设定的阈值比较，并以退出码 `0`、`1` 或 `2` 结束。
 
 ---
 
@@ -150,7 +165,7 @@ export default defineConfig({
 
 ### 3. 执行语义验证
 
-配置 API Key 并执行验证命令：
+在 [TypeSafe 控制台](https://console.typesafe.ai/keys)创建 API Key，完成配置后执行验证命令：
 
 ```bash
 export TYPESAFE_AI_API_KEY="your-typesafe-api-key"
