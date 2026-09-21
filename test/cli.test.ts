@@ -5,6 +5,7 @@ import { after, beforeEach, describe, test as it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parseCliArgs } from '../src/cli/args.js';
 import { checkCommand } from '../src/cli/commands/check.js';
+import { OWN_CODE_PATH, OWN_SPEC_PATH } from './own-project.js';
 import { captureConsole, expect } from './test-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,9 +14,9 @@ const pkgRoot = path.resolve(__dirname, '../..');
 
 const LIVE_CONFIG_SOURCE = `export default {
   targets: {
-    auth: {
-      specPath: 'test/fixtures/specs/auth-requirements.md',
-      codePaths: ['test/fixtures/src/auth.ts'],
+    exitCodes: {
+      specPath: '${OWN_SPEC_PATH}',
+      codePaths: ['${OWN_CODE_PATH}'],
       rubrics: {
         satisfiesRequirements: {
           type: 'noul',
@@ -68,9 +69,12 @@ describe('CLI check command', () => {
   it('writes json output to a file when --output is set', async () => {
     const tempDir = await makeProjectTempDir();
     const outputPath = path.join(tempDir, 'result.json');
+    const configPath = path.join(tempDir, 'jev-spec.config.mjs');
+    await fs.writeFile(configPath, LIVE_CONFIG_SOURCE, 'utf-8');
     const exitCode = await checkCommand({
       cwd: pkgRoot,
-      config: 'test/fixtures/sample.config.ts',
+      config: configPath,
+      mock: true,
       format: 'json',
       output: outputPath,
     });
@@ -106,6 +110,37 @@ describe('CLI check command', () => {
     expect((JSON.parse(stdout) as { mock?: boolean }).mock).toBe(true);
   });
 
+  it('REQ-EXIT-01: exits with 0 when every checked target passes', async () => {
+    const tempDir = await makeProjectTempDir();
+    const configPath = path.join(tempDir, 'jev-spec.config.mjs');
+    await fs.writeFile(configPath, LIVE_CONFIG_SOURCE, 'utf-8');
+
+    const { result, stdout } = await captureConsole(() =>
+      checkCommand({ cwd: pkgRoot, config: configPath, format: 'json', mock: true })
+    );
+
+    expect((JSON.parse(stdout) as { passed: boolean }).passed).toBe(true);
+    expect(result).toBe(0);
+  });
+
+  it('REQ-EXIT-02: exits with 1 when an assertion is violated', async () => {
+    const tempDir = await makeProjectTempDir();
+    const configPath = path.join(tempDir, 'jev-spec.config.mjs');
+    // The mock evaluator answers this question with a high probability, which the assertion forbids.
+    await fs.writeFile(
+      configPath,
+      LIVE_CONFIG_SOURCE.replace('{ minProbability: 0.8 }', '{ maxProbability: 0.15 }'),
+      'utf-8'
+    );
+
+    const { result, stdout } = await captureConsole(() =>
+      checkCommand({ cwd: pkgRoot, config: configPath, format: 'json', mock: true })
+    );
+
+    expect((JSON.parse(stdout) as { passed: boolean }).passed).toBe(false);
+    expect(result).toBe(1);
+  });
+
   it('accepts --mock on the command line', () => {
     expect(parseCliArgs(['check', '--mock'])).toEqual({ kind: 'check', options: { mock: true } });
   });
@@ -116,10 +151,7 @@ describe('CLI check command', () => {
     // The spec file does not exist: if the check ran first, the error would be ENOENT.
     await fs.writeFile(
       configPath,
-      LIVE_CONFIG_SOURCE.replace(
-        'test/fixtures/specs/auth-requirements.md',
-        'test/fixtures/specs/missing.md'
-      ),
+      LIVE_CONFIG_SOURCE.replace(OWN_SPEC_PATH, 'docs/specs/missing.md'),
       'utf-8'
     );
 

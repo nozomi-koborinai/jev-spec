@@ -42,7 +42,7 @@ describe('assertRubric', () => {
     );
   });
 
-  it('fails a noul assertion when the evaluator returns a non-finite probability', () => {
+  it('REQ-ANSWER-01: fails a noul assertion when the evaluator returns a non-finite probability', () => {
     expect(
       assertRubric('r', noulRubric, noulResult(Number.NaN), { minProbability: 0.85 }).passed
     ).toBe(false);
@@ -104,7 +104,7 @@ describe('assertRubric', () => {
     );
   });
 
-  it('treats a rubric without an assertion as informational', () => {
+  it('REQ-ANSWER-03: treats a rubric without an assertion as informational', () => {
     expect(assertRubric('r', noulRubric, noulResult(0.01)).passed).toBe(true);
   });
 });

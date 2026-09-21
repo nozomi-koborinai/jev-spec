@@ -14,6 +14,7 @@ import {
   parseMarkdownSections,
   SpecFilterError,
 } from '../src/parser/markdown-parser.js';
+import { OWN_REQUIREMENT_PREFIX, OWN_SPEC_PATH, ownRequirementIds } from './own-project.js';
 import { expect } from './test-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -147,16 +148,18 @@ Round half up.
     }
   });
 
-  it('loads and filters spec file from fixture', async () => {
-    const fixturePath = path.resolve(pkgRoot, 'test/fixtures/specs/auth-requirements.md');
-    const parsed = await loadSpec(fixturePath, pkgRoot, {
-      requirementPrefix: 'REQ-AUTH-',
+  it('loads and filters a real spec of this repository', async () => {
+    const ids = await ownRequirementIds(pkgRoot);
+    const parsed = await loadSpec(path.resolve(pkgRoot, OWN_SPEC_PATH), pkgRoot, {
+      requirementPrefix: OWN_REQUIREMENT_PREFIX,
     });
 
+    expect(ids.length).toBeGreaterThan(0);
     expect(parsed.sections.length).toBeGreaterThan(0);
-    expect(parsed.requirements.length).toBeGreaterThan(0);
-    expect(parsed.filteredText).toContain('REQ-AUTH-01');
-    expect(parsed.filteredText).toContain('REQ-AUTH-02');
+    expect([...new Set(parsed.requirements.map((requirement) => requirement.id))]).toEqual(ids);
+    for (const id of ids) {
+      expect(parsed.filteredText).toContain(id);
+    }
     expect(parsed.ast.tree.type).toBe('root');
   });
 });

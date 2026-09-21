@@ -12,7 +12,7 @@ import {
 import { runChecks } from '../src/runner/engine.js';
 import { formatMarkdownReport, formatTerminalReport } from '../src/runner/reporter.js';
 import type { JevSpecConfig } from '../src/types.js';
-import sampleConfig from './fixtures/sample.config.js';
+import { sampleConfig } from './own-project.js';
 import { expect } from './test-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -130,7 +130,12 @@ describe('model pinning', () => {
     const terminal = formatTerminalReport(unpinned);
     expect(terminal).toContain('not pinned');
     expect(terminal).toContain('DRY RUN OK');
-    expect(terminal).toContain('1 warning(s)');
+    // The summary counts the warning about the setup on top of the warnings of the targets.
+    const targetWarnings = unpinned.targets.reduce(
+      (count, target) => count + (target.plan?.warnings.length ?? 0),
+      0
+    );
+    expect(terminal).toContain(`${targetWarnings + 1} warning(s)`);
   });
 
   it('does not warn when the model is pinned in the config or in TYPESAFE_DEFAULT_MODEL, or in mock mode', async () => {

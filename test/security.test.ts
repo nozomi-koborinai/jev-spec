@@ -30,23 +30,23 @@ const pkgRoot = path.resolve(__dirname, '../..');
 
 describe('Path security (S-01 / S-02)', () => {
   it('allows paths inside project root', async () => {
-    const resolved = await assertInsideRoot(pkgRoot, 'test/fixtures/src/auth.ts');
-    expect(resolved).toContain('auth.ts');
+    const resolved = await assertInsideRoot(pkgRoot, 'src/index.ts');
+    expect(resolved).toContain('index.ts');
   });
 
-  it('rejects paths that escape project root via ..', async () => {
+  it('REQ-PATH-01: rejects paths that escape project root via ..', async () => {
     await assert.rejects(() => assertInsideRoot(pkgRoot, '../../../etc/passwd'), PathSecurityError);
   });
 
-  it('rejects absolute paths outside project root', async () => {
+  it('REQ-PATH-01: rejects absolute paths outside project root', async () => {
     await assert.rejects(() => assertInsideRoot(pkgRoot, '/etc/passwd'), PathSecurityError);
   });
 
-  it('rejects glob patterns with leading /', () => {
+  it('REQ-PATH-02: rejects glob patterns with leading /', () => {
     assert.throws(() => validateGlobPattern('/etc/passwd'), PathSecurityError);
   });
 
-  it('rejects glob patterns containing .. segments', () => {
+  it('REQ-PATH-02: rejects glob patterns containing .. segments', () => {
     assert.throws(() => validateGlobPattern('../secret/**'), PathSecurityError);
   });
 
@@ -58,14 +58,38 @@ describe('Path security (S-01 / S-02)', () => {
     await assert.rejects(() => extractCodeFromPaths(['/etc/passwd'], pkgRoot), PathSecurityError);
   });
 
-  it('skips symlinks that escape project root', async () => {
+  it('REQ-PATH-04: never matches environment files, the .git directory or private keys', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jev-spec-secrets-'));
+    try {
+      await fs.mkdir(path.join(dir, '.git'));
+      await fs.mkdir(path.join(dir, 'src'));
+      for (const file of [
+        '.env',
+        '.env.local',
+        '.git/config',
+        'server.pem',
+        'id_rsa',
+        'src/ok.ts',
+      ]) {
+        await fs.writeFile(path.join(dir, file), 'content\n', 'utf-8');
+      }
+
+      const matches = await resolveGlobPatterns(['**/*', '**/.*', '.git/**'], dir);
+
+      expect(matches.map((match) => match.split(path.sep).join('/'))).toEqual(['src/ok.ts']);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('REQ-PATH-03: skips symlinks that escape project root', async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jev-spec-symlink-'));
     const outsideFile = path.join(tmpDir, 'outside.txt');
-    const linkPath = path.join(pkgRoot, 'test', 'fixtures', 'escape.link');
+    const linkPath = path.join(pkgRoot, 'test', 'escape.link');
     try {
       await fs.writeFile(outsideFile, 'secret-data');
       await fs.symlink(outsideFile, linkPath);
-      const matches = await resolveGlobPatterns(['test/fixtures/escape.link'], pkgRoot);
+      const matches = await resolveGlobPatterns(['test/escape.link'], pkgRoot);
       expect(matches).toHaveLength(0);
     } finally {
       await fs.unlink(linkPath).catch(() => {});
@@ -81,15 +105,15 @@ describe('Git revision sanitization (S-03)', () => {
     assertGitRevision('v1.0.0~1');
   });
 
-  it('rejects revision ranges starting with -', () => {
+  it('REQ-GIT-02: rejects revision ranges starting with -', () => {
     assert.throws(() => assertGitRevision('--output=/tmp/pwned'), GitRevisionError);
   });
 
-  it('rejects revision ranges with shell metacharacters', () => {
+  it('REQ-GIT-02: rejects revision ranges with shell metacharacters', () => {
     assert.throws(() => assertGitRevision('HEAD; id'), GitRevisionError);
   });
 
-  it('rejects empty revision ranges', () => {
+  it('REQ-GIT-02: rejects empty revision ranges', () => {
     assert.throws(() => assertGitRevision('   '), GitRevisionError);
   });
 
