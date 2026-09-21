@@ -70,7 +70,16 @@ Implementation (Code / Git Diff) ─┘   (Root Jail + Boundary Isolation)      
 
 ## Quickstart
 
-Get up and running with `jev-spec` in three steps:
+**AI-assisted setup.** For Claude Code, Cursor, Codex, Gemini CLI, GitHub Copilot and any other [Agent Skills](https://agentskills.io)-compatible client (requires GitHub CLI v2.90+):
+
+```bash
+gh skill install nozomi-koborinai/jev-spec jev-spec-init
+gh skill install nozomi-koborinai/jev-spec jev-spec-fix
+```
+
+Then ask your agent to "set up jev-spec". `jev-spec-init` maps your specifications to code, writes one focused question per requirement, validates the wiring offline and reports which requirements are not covered. `jev-spec-fix` works through a failing check and reports what was and was not verified.
+
+**Manual setup.** Get up and running with `jev-spec` in three steps:
 
 ### 1. Install jev-spec
 
@@ -106,8 +115,11 @@ export default defineConfig({
         requirementPrefix: 'REQ-AUTH-',
       },
       rubrics: {
-        satisfiesRequirements: noul(
-          'Does the code satisfy functional criteria defined in REQ-AUTH-01 and REQ-AUTH-02?'
+        verifiesSessionTokens: noul(
+          'Does the code satisfy REQ-AUTH-01: the signature of every session token is verified before access to a protected resource is granted?'
+        ),
+        rejectsRevokedTokens: noul(
+          'Does the code satisfy REQ-AUTH-02: a token whose ID is on the revocation list is rejected?'
         ),
         introducesUnspecifiedBehavior: noul(
           'Does the implementation introduce undocumented endpoints, global state mutability, or unauthenticated bypasses?'
@@ -123,7 +135,8 @@ export default defineConfig({
         ]),
       },
       assertions: {
-        satisfiesRequirements: { minProbability: 0.85 },
+        verifiesSessionTokens: { minProbability: 0.85 },
+        rejectsRevokedTokens: { minProbability: 0.85 },
         introducesUnspecifiedBehavior: { maxProbability: 0.15 },
         securityPosture: { allowedChoices: ['secure'], minConfidence: 0.75 },
         implementationCompleteness: { minScore: 1.8 },
@@ -132,6 +145,8 @@ export default defineConfig({
   },
 });
 ```
+
+Ask one narrow question per requirement and name its ID. A question that joins several requirements cannot tell you which one failed, and the model answers it less reliably.
 
 ### 3. Run Semantic Verification
 

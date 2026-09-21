@@ -70,7 +70,16 @@
 
 ## 快速上手
 
-仅需三步即可在项目中引入 `jev-spec`：
+**AI 辅助配置。** 适用于 Claude Code、Cursor、Codex、Gemini CLI、GitHub Copilot 以及其他兼容 [Agent Skills](https://agentskills.io) 的客户端（需要 GitHub CLI v2.90 及以上版本）：
+
+```bash
+gh skill install nozomi-koborinai/jev-spec jev-spec-init
+gh skill install nozomi-koborinai/jev-spec jev-spec-fix
+```
+
+然后让你的智能体“配置 jev-spec”。`jev-spec-init` 会建立规范与代码的对应关系，为每条需求编写一个聚焦的问题，离线校验配置是否连通，并报告尚未覆盖的需求。`jev-spec-fix` 用于排查失败的检查，并报告哪些内容已验证、哪些尚未验证。
+
+**手动配置。** 仅需三步即可在项目中引入 `jev-spec`：
 
 ### 1. 安装 jev-spec
 
@@ -106,8 +115,11 @@ export default defineConfig({
         requirementPrefix: 'REQ-AUTH-',
       },
       rubrics: {
-        satisfiesRequirements: noul(
-          'Does the code satisfy functional criteria defined in REQ-AUTH-01 and REQ-AUTH-02?'
+        verifiesSessionTokens: noul(
+          'Does the code satisfy REQ-AUTH-01: the signature of every session token is verified before access to a protected resource is granted?'
+        ),
+        rejectsRevokedTokens: noul(
+          'Does the code satisfy REQ-AUTH-02: a token whose ID is on the revocation list is rejected?'
         ),
         introducesUnspecifiedBehavior: noul(
           'Does the implementation introduce undocumented endpoints, global state mutability, or unauthenticated bypasses?'
@@ -123,7 +135,8 @@ export default defineConfig({
         ]),
       },
       assertions: {
-        satisfiesRequirements: { minProbability: 0.85 },
+        verifiesSessionTokens: { minProbability: 0.85 },
+        rejectsRevokedTokens: { minProbability: 0.85 },
         introducesUnspecifiedBehavior: { maxProbability: 0.15 },
         securityPosture: { allowedChoices: ['secure'], minConfidence: 0.75 },
         implementationCompleteness: { minScore: 1.8 },
@@ -132,6 +145,8 @@ export default defineConfig({
   },
 });
 ```
+
+请为每条需求单独编写一个聚焦的问题，并写明需求 ID。把多条需求合并进一个问题，既无法得知究竟是哪一条未通过，模型的回答也会更不可靠。
 
 ### 3. 执行语义验证
 
