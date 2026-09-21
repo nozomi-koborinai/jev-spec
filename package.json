@@ -1,7 +1,7 @@
 {
   "name": "jev-spec",
   "version": "0.2.0",
-  "description": "Specification-Driven Semantic Verification Engine for AI Code & Specs powered by TypeSafe AI Jev",
+  "description": "Catch spec drift on every commit: check your code against your Markdown specs with TypeSafe AI's Jev model.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -49,6 +49,7 @@
     "jev",
     "sdd",
     "specification-driven-development",
+    "spec-drift",
     "semantic-verification",
     "linter"
   ],

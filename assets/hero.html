@@ -1,0 +1,87 @@
+<!doctype html>
+<!--
+  Source of assets/hero.png (1280x720). To render it again after an edit, from the repository root:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars \
+      --force-device-scale-factor=1 --window-size=1280,720 --virtual-time-budget=4000 \
+      --screenshot=assets/hero.png "file://$PWD/assets/hero.html"
+
+  Any Chromium-based browser works. The typeface is IBM Plex (SIL Open Font License), loaded from a CDN.
+  The two lines use the two colours of the logo: the spec is the yardstick and stays straight, the code
+  leaves it at one commit, and that commit is the one the check fails.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>jev-spec hero</title>
+<style>
+  @font-face { font-family: 'Plex Sans'; font-weight: 500; src: url('https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Plex Mono'; font-weight: 500; src: url('https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+
+  :root {
+    --paper: #F8F7F2;
+    --ink: #0B0C10;
+    --spec: #03498B;
+    --code: #03B6D1;
+    --rung: #8C9BAD;
+    --signal: #D1242F;
+  }
+  html, body { margin: 0; padding: 0; background: var(--paper); }
+  .canvas { position: relative; width: 1280px; height: 720px; background: var(--paper); overflow: hidden; }
+  .logo { position: absolute; left: 286px; top: 92px; width: 708px; height: auto; }
+  .tagline {
+    position: absolute; left: 0; right: 0; top: 326px; margin: 0; text-align: center;
+    font: 500 52px/1.15 'Plex Sans', sans-serif; letter-spacing: -0.014em; color: var(--ink);
+  }
+  svg { position: absolute; left: 0; top: 0; }
+  .lane { font: 500 25px 'Plex Sans', sans-serif; fill: var(--ink); }
+  .req { font: 500 25px 'Plex Mono', monospace; fill: var(--ink); }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <img class="logo" src="logo.png" alt="">
+  <p class="tagline">Catch spec drift on every commit.</p>
+
+  <svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+    <title>Commit graph: the spec line and the code line run in step for six commits; at the seventh the code line leaves the spec line and the commit is marked as failed for REQ-AUTH-02.</title>
+    <!-- rungs: one per commit while the two lines are in step -->
+    <g stroke="var(--rung)" stroke-width="3">
+      <line x1="196" y1="492" x2="196" y2="530"/>
+      <line x1="326" y1="492" x2="326" y2="530"/>
+      <line x1="456" y1="492" x2="456" y2="530"/>
+      <line x1="586" y1="492" x2="586" y2="530"/>
+      <line x1="716" y1="492" x2="716" y2="530"/>
+      <line x1="846" y1="492" x2="846" y2="530"/>
+    </g>
+    <!-- the commit where the code leaves the spec -->
+    <line x1="976" y1="492" x2="976" y2="612" stroke="var(--signal)" stroke-width="3.5"/>
+
+    <!-- rails -->
+    <path d="M196 492 H976" fill="none" stroke="var(--spec)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M196 530 H846 C 900 530, 922 612, 976 612" fill="none" stroke="var(--code)" stroke-width="6" stroke-linecap="round"/>
+
+    <!-- commits -->
+    <g fill="var(--paper)" stroke="var(--spec)" stroke-width="5">
+      <circle cx="196" cy="492" r="9.5"/><circle cx="326" cy="492" r="9.5"/><circle cx="456" cy="492" r="9.5"/>
+      <circle cx="586" cy="492" r="9.5"/><circle cx="716" cy="492" r="9.5"/><circle cx="846" cy="492" r="9.5"/>
+      <circle cx="976" cy="492" r="9.5"/>
+    </g>
+    <g fill="var(--paper)" stroke="var(--code)" stroke-width="5">
+      <circle cx="196" cy="530" r="9.5"/><circle cx="326" cy="530" r="9.5"/><circle cx="456" cy="530" r="9.5"/>
+      <circle cx="586" cy="530" r="9.5"/><circle cx="716" cy="530" r="9.5"/><circle cx="846" cy="530" r="9.5"/>
+      <circle cx="976" cy="612" r="9.5"/>
+    </g>
+
+    <!-- the catch -->
+    <circle cx="976" cy="552" r="21" fill="var(--signal)"/>
+    <path d="M967 543 L985 561 M985 543 L967 561" stroke="var(--paper)" stroke-width="4.5" stroke-linecap="round"/>
+
+    <!-- labels -->
+    <text class="lane" x="172" y="500" text-anchor="end">spec</text>
+    <text class="lane" x="172" y="539" text-anchor="end">code</text>
+    <text class="req" x="1012" y="561">REQ-AUTH-02</text>
+  </svg>
+</div>
+</body>
+</html>
