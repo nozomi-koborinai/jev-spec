@@ -133,7 +133,9 @@ export async function runChecks(
     });
 
     // Decide this before touching the spec, so an untouched target can never fail the run.
-    if (codeContext.mode === 'diff' && codeContext.files.length === 0) {
+    // The changed files decide, not the files that are left: a target whose code was deleted
+    // has changed more than any other.
+    if (codeContext.mode === 'diff' && (codeContext.changedFiles ?? []).length === 0) {
       targetResults.push({
         targetName,
         specFiles: [targetConfig.specPath],
@@ -168,6 +170,7 @@ export async function runChecks(
         evaluations: [],
         durationMs: Date.now() - targetStart,
         estimatedCostUsd: estCost,
+        ...(codeContext.changedFiles && { changedFiles: codeContext.changedFiles }),
         plan: {
           specSections: parsedSpec.sections.map((section) => section.title),
           requirementIds,
@@ -224,6 +227,7 @@ export async function runChecks(
       durationMs: targetDuration,
       estimatedCostUsd: estCost,
       ...(model && { model }),
+      ...(codeContext.changedFiles && { changedFiles: codeContext.changedFiles }),
     });
   }
 

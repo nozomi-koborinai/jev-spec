@@ -163,6 +163,8 @@ export interface TargetCheckResult {
   readonly plan?: TargetPlan;
   /** Versioned ID of the model that answered, as the API reported it. Absent when nothing was sent. */
   readonly model?: string;
+  /** Diff run only: the changed files that made this target part of the run. */
+  readonly changedFiles?: readonly string[];
 }
 
 export interface OverallCheckResult {

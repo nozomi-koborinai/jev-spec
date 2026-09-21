@@ -1,11 +1,13 @@
 import * as fs from 'node:fs/promises';
-import { extractGitDiff, formatDiffContext } from './git-diff.js';
+import * as path from 'node:path';
+import { extractGitDiff, listStagedFiles, readStagedFile } from './git-diff.js';
 import { matchesGlobPatterns, resolveGlobPatterns } from './glob-matcher.js';
 import {
   assertInsideRoot,
   MAX_FILE_COUNT,
   MAX_FILE_SIZE_BYTES,
   PathSecurityError,
+  validateGlobPattern,
 } from './path-security.js';
 import type { CodeExtractionOptions, GitDiffOptions } from './types.js';
 
@@ -14,16 +16,19 @@ export interface CodeFileContext {
   readonly absolutePath: string;
   readonly content: string;
   readonly lineCount: number;
-  readonly source: 'file' | 'diff';
+  readonly source: 'file';
 }
 
 export interface ExtractedCodeContext {
   readonly files: readonly CodeFileContext[];
   readonly combinedPromptContext: string;
   readonly totalLines: number;
+  /** `diff` when a diff decided whether the target is part of the run. The content is always whole files. */
   readonly mode: 'full' | 'diff';
   /** True when the combined context was cut at the character budget. */
   readonly truncated: boolean;
+  /** Diff run only: the changed files that belong to the target. Empty when the target is skipped. */
+  readonly changedFiles?: readonly string[];
 }
 
 const DEFAULT_MAX_CHARS = 120_000;
@@ -52,7 +57,12 @@ async function readFileWithinLimits(
 }
 
 /**
- * Resolves paths and extracts code content from files or git diffs.
+ * Reads the code of a target.
+ *
+ * In a diff run (`--staged`, `--diff`) the diff only decides whether the target is part of the
+ * run: a target none of whose files changed comes back empty and is skipped. A target that was
+ * touched is read in full, exactly as in a full run. Rubrics ask about the target as a whole, and
+ * what they ask about is usually outside the changed hunks.
  */
 export async function extractCodeContext(
   filePatterns: readonly string[],
@@ -63,9 +73,25 @@ export async function extractCodeContext(
 
   const gitDiff = options.gitDiff;
   if (gitDiff?.staged || gitDiff?.diffRange) {
-    return extractFromGitDiff(filePatterns, cwd, gitDiff, options.contextLines, maxChars);
+    const changedFiles = await changedFilesMatching(filePatterns, cwd, gitDiff);
+    if (changedFiles.length === 0) {
+      return { ...buildExtractedContext([], 'diff', maxChars), changedFiles };
+    }
+    // A staged run judges what is about to be committed. After `git add -p` the working tree
+    // holds something else.
+    const files = gitDiff.staged
+      ? await readStagedFiles(filePatterns, cwd)
+      : await readMatchingFiles(filePatterns, cwd);
+    return { ...buildExtractedContext(files, 'diff', maxChars), changedFiles };
   }
 
+  return buildExtractedContext(await readMatchingFiles(filePatterns, cwd), 'full', maxChars);
+}
+
+async function readMatchingFiles(
+  filePatterns: readonly string[],
+  cwd: string
+): Promise<CodeFileContext[]> {
   const resolvedPaths = await resolveGlobPatterns(filePatterns, cwd);
   if (resolvedPaths.length > MAX_FILE_COUNT) {
     throw new PathSecurityError(
@@ -87,64 +113,64 @@ export async function extractCodeContext(
     }
   }
 
-  return buildExtractedContext(files, 'full', maxChars);
+  return files;
 }
 
-async function extractFromGitDiff(
+/** The files of the target as they are staged in the git index. */
+async function readStagedFiles(
   filePatterns: readonly string[],
-  cwd: string,
-  gitDiff: GitDiffOptions,
-  contextLines: number | undefined,
-  maxChars: number
-): Promise<ExtractedCodeContext> {
-  const diff = await extractGitDiff(gitDiff, cwd, contextLines);
-  const matched = diff.files.filter((file) => matchesGlobPatterns(file.relativePath, filePatterns));
+  cwd: string
+): Promise<CodeFileContext[]> {
+  for (const pattern of filePatterns) {
+    validateGlobPattern(pattern.startsWith('!') ? pattern.slice(1) : pattern);
+  }
 
-  if (matched.length > MAX_FILE_COUNT) {
+  const staged = (await listStagedFiles(cwd)).filter((relativePath) =>
+    matchesGlobPatterns(relativePath, filePatterns)
+  );
+  if (staged.length > MAX_FILE_COUNT) {
     throw new PathSecurityError(
-      `Diff file count ${matched.length} exceeds maximum of ${MAX_FILE_COUNT} per target`
+      `File count ${staged.length} exceeds maximum of ${MAX_FILE_COUNT} per target`
     );
   }
 
   const files: CodeFileContext[] = [];
-  for (const file of matched) {
-    try {
-      const absolutePath = await assertInsideRoot(cwd, file.relativePath);
-      files.push({
-        relativePath: file.relativePath,
-        absolutePath,
-        content: file.formattedDiff,
-        lineCount: file.hunks.reduce((acc, hunk) => acc + hunk.lineCount, 0),
-        source: 'diff' as const,
-      });
-    } catch {
-      // Skip diff entries outside project root
+  for (const relativePath of staged) {
+    const content = await readStagedFile(relativePath, cwd, MAX_FILE_SIZE_BYTES);
+    if (content === null) {
+      continue;
     }
+    files.push({
+      relativePath,
+      absolutePath: path.resolve(cwd, relativePath),
+      content,
+      lineCount: content.split('\n').length,
+      source: 'file',
+    });
   }
+  return files;
+}
 
-  if (files.length === 0 && diff.rawDiff.trim()) {
-    return {
-      files: [],
-      combinedPromptContext: formatDiffContext([]),
-      totalLines: 0,
-      mode: 'diff',
-      truncated: false,
-    };
-  }
-
-  return buildExtractedContext(files, 'diff', maxChars, formatDiffContext(matched));
+/** The files of the diff, deleted ones included, that belong to the target. */
+async function changedFilesMatching(
+  filePatterns: readonly string[],
+  cwd: string,
+  gitDiff: GitDiffOptions
+): Promise<string[]> {
+  const diff = await extractGitDiff(gitDiff, cwd);
+  return diff.files
+    .map((file) => file.relativePath)
+    .filter((relativePath) => matchesGlobPatterns(relativePath, filePatterns));
 }
 
 function buildExtractedContext(
   files: CodeFileContext[],
   mode: 'full' | 'diff',
-  maxChars: number,
-  diffFormatted?: string
+  maxChars: number
 ): ExtractedCodeContext {
-  let combinedPromptContext =
-    mode === 'diff' && diffFormatted !== undefined
-      ? diffFormatted
-      : files.map((file) => `--- File: ${file.relativePath} ---\n${file.content}`).join('\n\n');
+  let combinedPromptContext = files
+    .map((file) => `--- File: ${file.relativePath} ---\n${file.content}`)
+    .join('\n\n');
 
   const truncated = combinedPromptContext.length > maxChars;
   if (truncated) {

@@ -38,8 +38,8 @@ jobs:
         if: env.TYPESAFE_AI_API_KEY == ''
         run: node bin/jev-spec.js check --dry-run --format markdown >> "$GITHUB_STEP_SUMMARY"
 
-      # A full run on purpose, for pull requests too. A diff run sends only the changed hunks,
-      # and the rubrics ask about code that is usually outside them.
+      # A full run on purpose, for pull requests too. It costs a fraction of a cent, and a diff run
+      # would skip a pull request that changes only a spec.
       - name: Check the code against the specs
         if: env.TYPESAFE_AI_API_KEY != ''
         run: node bin/jev-spec.js check --format markdown >> "$GITHUB_STEP_SUMMARY"

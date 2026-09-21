@@ -119,6 +119,44 @@ export default defineConfig({
       },
     },
 
+    diffRuns: {
+      description: 'A diff chooses the targets of a run',
+      specPath: 'docs/specs/diff-runs.md',
+      specFilter: { requirementPrefix: 'REQ-DIFF-' },
+      codePaths: ['src/runner/engine.ts'],
+      rubrics: {
+        'REQ-DIFF-01': noul(
+          'Does the run loop skip a target, before it loads the spec and before it calls the evaluator, when a diff run found no changed file that belongs to the target?'
+        ),
+        'REQ-DIFF-02': noul(
+          'In the run loop, does the condition that skips a target in a diff run test the length of the list of files that were read?'
+        ),
+        'REQ-DIFF-03': noul(
+          'Is the evaluator created only when the first target is actually evaluated, so that a run in which every target is skipped never creates it?'
+        ),
+      },
+      assertions: {
+        'REQ-DIFF-01': MET,
+        'REQ-DIFF-02': NOT_VIOLATED,
+        'REQ-DIFF-03': MET,
+      },
+    },
+
+    diffContent: {
+      description: 'A staged run judges what is about to be committed',
+      specPath: 'docs/specs/diff-runs.md',
+      specFilter: { requirementPrefix: 'REQ-READ-' },
+      codePaths: ['src/context/code-extractor.ts'],
+      rubrics: {
+        'REQ-READ-02': noul(
+          'In a run with --staged, does the function that reads the code of a target take the content of the files from the git index, and not from the working tree?'
+        ),
+      },
+      assertions: {
+        'REQ-READ-02': MET,
+      },
+    },
+
     paths: {
       description: 'Files are read only from inside the project root',
       specPath: 'docs/specs/security.md',

@@ -1,0 +1,12 @@
+diff --git a/src/runner/engine.ts b/src/runner/engine.ts
+--- a/src/runner/engine.ts
++++ b/src/runner/engine.ts
+@@ -108,7 +108,7 @@
+   const startTime = Date.now();
+ 
+   // Created on first use: a run in which every target is skipped needs no API key.
+-  let evaluator = options.evaluator;
++  let evaluator = options.evaluator ?? createJevEvaluator(config.client);
+   const getEvaluator = (): JevEvaluator => (evaluator ??= createJevEvaluator(config.client));
+   const isMock = options.evaluator
+     ? options.evaluator instanceof MockJevEvaluator

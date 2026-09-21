@@ -27,6 +27,7 @@ function formatTerminalPlan(target: TargetCheckResult, plan: TargetPlan): string
     `  Spec files: ${target.specFiles.join(', ')} (${plan.specSections.length} section(s), ${plan.specChars} chars)`,
     `  Requirement IDs: ${listOrNone(plan.requirementIds)}`,
     `  Code files: ${listOrNone(target.codeFiles)} (${plan.codeChars} chars)`,
+    ...(target.changedFiles ? [`  Changed files: ${target.changedFiles.join(', ')}`] : []),
     `  Rubrics: ${listOrNone(plan.rubrics)}`,
   ];
   for (const warning of plan.warnings) {
@@ -62,6 +63,9 @@ export function formatTerminalReport(result: OverallCheckResult): string {
     lines.push(`Target: ${target.targetName} [${icon} ${target.passed ? 'PASSED' : 'FAILED'}]`);
     lines.push(`  Spec files: ${target.specFiles.join(', ')}`);
     lines.push(`  Code files: ${target.codeFiles.join(', ')}`);
+    if (target.changedFiles) {
+      lines.push(`  Changed files: ${target.changedFiles.join(', ')}`);
+    }
     if (target.model) {
       lines.push(`  Model: ${target.model}`);
     }
