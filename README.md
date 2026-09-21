@@ -155,6 +155,8 @@ npx jev-spec check
 
 `jev-spec` configurations use the `defineConfig(...)` helper for full TypeScript type inference and auto-completion.
 
+Every configuration is validated before anything is sent to Jev. Assertion keys that match no rubric, options that do not fit the rubric type, unknown choice keys and out-of-range thresholds (for example `maxProbability: 15` instead of `0.15`) stop the run with exit code `2` instead of silently producing a check that can never fail. With `defineConfig(...)`, TypeScript reports the same mistakes in your editor.
+
 ### Core DSL Primitives
 
 #### noul(question): NoulRubric

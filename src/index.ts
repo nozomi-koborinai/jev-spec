@@ -1,6 +1,7 @@
 export * from './types.js';
 export * from './dsl.js';
 export * from './config.js';
+export * from './config-validation.js';
 export * from './parser/markdown-parser.js';
 export * from './context/code-extractor.js';
 export * from './context/git-diff.js';

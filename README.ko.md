@@ -155,6 +155,8 @@ npx jev-spec check
 
 `jev-spec` 설정은 완벽한 TypeScript 타입 추론과 자동 완성을 제공하는 `defineConfig(...)` 헬퍼 함수를 사용합니다.
 
+모든 설정은 Jev로 무엇이든 전송하기 전에 먼저 검증됩니다. 어떤 루브릭과도 일치하지 않는 어서션 키, 루브릭 타입에 맞지 않는 옵션, 존재하지 않는 선택지 키, 범위를 벗어난 임계값(예: `0.15` 대신 `maxProbability: 15`로 잘못 적은 경우)이 있으면, 절대 실패하지 않는 검사를 조용히 만들어 내는 대신 종료 코드 `2`로 실행을 중단합니다. `defineConfig(...)`를 사용하면 TypeScript가 에디터에서 동일한 실수를 알려 줍니다.
+
 ### 핵심 DSL 프리미티브
 
 #### noul(question): NoulRubric
