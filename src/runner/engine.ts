@@ -30,8 +30,14 @@ export async function runVerification(
   validateConfig(config);
 
   const cwd = options.cwd ?? process.cwd();
-  const evaluator = options.evaluator ?? createJevEvaluator(config.client);
   const startTime = Date.now();
+
+  // Created on first use: a run in which every zone is skipped needs no API key.
+  let evaluator = options.evaluator;
+  const getEvaluator = (): JevEvaluator => (evaluator ??= createJevEvaluator(config.client));
+  const isMock = options.evaluator
+    ? options.evaluator instanceof MockJevEvaluator
+    : Boolean(config.client?.mock);
 
   const zoneNames = options.zone ? [options.zone] : Object.keys(config.zones);
 
@@ -45,13 +51,12 @@ export async function runVerification(
 
     const zoneStart = Date.now();
 
-    const parsedSpec = await loadSpec(zoneConfig.specPath, cwd, zoneConfig.specFilter);
-
     const codeContext = await extractCodeContext(zoneConfig.codePaths, {
       cwd,
       gitDiff: options.gitDiff,
     });
 
+    // Decide this before touching the spec, so an untouched zone can never fail the run.
     if (codeContext.mode === 'diff' && codeContext.files.length === 0) {
       zoneResults.push({
         zoneName,
@@ -67,7 +72,9 @@ export async function runVerification(
       continue;
     }
 
-    const rubricResults = await evaluator.evaluate({
+    const parsedSpec = await loadSpec(zoneConfig.specPath, cwd, zoneConfig.specFilter);
+
+    const rubricResults = await getEvaluator().evaluate({
       specContext: parsedSpec.filteredText,
       codeContext: codeContext.combinedPromptContext,
       rubrics: zoneConfig.rubrics,
@@ -120,7 +127,7 @@ export async function runVerification(
   const totalCost = zoneResults.reduce((acc, z) => acc + z.estimatedCostUsd, 0);
 
   return {
-    ...(evaluator instanceof MockJevEvaluator && { mock: true }),
+    ...(isMock && { mock: true }),
     passed: overallPassed,
     zones: zoneResults,
     totalDurationMs: totalDuration,
