@@ -45,6 +45,21 @@ export async function runVerification(
       gitDiff: options.gitDiff,
     });
 
+    if (codeContext.mode === 'diff' && codeContext.files.length === 0) {
+      zoneResults.push({
+        zoneName,
+        specFiles: [zoneConfig.specPath],
+        codeFiles: [],
+        passed: true,
+        evaluations: [],
+        durationMs: Date.now() - zoneStart,
+        estimatedCostUsd: 0,
+        skipped: true,
+        skipReason: 'No changed files match the codePaths of this zone',
+      });
+      continue;
+    }
+
     const rubricResults = await evaluator.evaluate({
       specContext: parsedSpec.filteredText,
       codeContext: codeContext.combinedPromptContext,

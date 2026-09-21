@@ -126,6 +126,9 @@ export interface ZoneCheckResult {
   readonly evaluations: readonly AssertionEvaluation[];
   readonly durationMs: number;
   readonly estimatedCostUsd: number;
+  /** True when the zone was not evaluated (e.g. no changed file matched its codePaths in diff mode). */
+  readonly skipped?: boolean;
+  readonly skipReason?: string;
 }
 
 export interface OverallCheckResult {
