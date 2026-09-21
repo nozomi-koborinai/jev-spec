@@ -22,6 +22,8 @@ export interface ExtractedCodeContext {
   readonly combinedPromptContext: string;
   readonly totalLines: number;
   readonly mode: 'full' | 'diff';
+  /** True when the combined context was cut at the character budget. */
+  readonly truncated: boolean;
 }
 
 const DEFAULT_MAX_CHARS = 120_000;
@@ -126,6 +128,7 @@ async function extractFromGitDiff(
       combinedPromptContext: formatDiffContext([]),
       totalLines: 0,
       mode: 'diff',
+      truncated: false,
     };
   }
 
@@ -143,7 +146,8 @@ function buildExtractedContext(
       ? diffFormatted
       : files.map((file) => `--- File: ${file.relativePath} ---\n${file.content}`).join('\n\n');
 
-  if (combinedPromptContext.length > maxChars) {
+  const truncated = combinedPromptContext.length > maxChars;
+  if (truncated) {
     combinedPromptContext = `${combinedPromptContext.slice(0, maxChars)}\n\n[... truncated for token budget ...]`;
   }
 
@@ -154,6 +158,7 @@ function buildExtractedContext(
     combinedPromptContext,
     totalLines,
     mode,
+    truncated,
   };
 }
 

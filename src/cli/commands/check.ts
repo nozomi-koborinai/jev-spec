@@ -13,6 +13,8 @@ export interface CheckCliOptions {
   readonly diff?: string | boolean;
   /** Forces the offline mock evaluator regardless of the configuration file. */
   readonly mock?: boolean;
+  /** Validates configuration, spec parsing and file matching without evaluating anything. */
+  readonly dryRun?: boolean;
   readonly cwd?: string;
 }
 
@@ -54,6 +56,7 @@ export async function checkCommand(options: CheckCliOptions = {}): Promise<numbe
       cwd,
       zone: options.zone,
       gitDiff: resolveGitDiffOptions(options),
+      dryRun: options.dryRun,
     });
 
     const format = options.format ?? 'terminal';

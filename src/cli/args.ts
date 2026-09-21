@@ -21,6 +21,7 @@ Options:
       --diff [range]     Verify a git diff range (default: HEAD), e.g. origin/main...HEAD
   -f, --format <format>  Output format: terminal (default), markdown, json
   -o, --output <file>    Write the report to a file inside the project root
+      --dry-run          Validate config, spec parsing and file matching; evaluates nothing, needs no API key
       --mock             Use the offline mock evaluator (no API key, results are not real)
   -h, --help             Show this help
   -v, --version          Show the jev-spec version
@@ -76,6 +77,7 @@ export function parseCliArgs(argv: readonly string[]): ParsedCli {
   let command: string | undefined;
   let staged = false;
   let mock = false;
+  let dryRun = false;
   let diff: string | true | undefined;
 
   for (let i = 0; i < args.length; i++) {
@@ -99,6 +101,11 @@ export function parseCliArgs(argv: readonly string[]): ParsedCli {
 
     if (arg === '--mock') {
       mock = true;
+      continue;
+    }
+
+    if (arg === '--dry-run') {
+      dryRun = true;
       continue;
     }
 
@@ -130,6 +137,10 @@ export function parseCliArgs(argv: readonly string[]): ParsedCli {
     throw new CliUsageError('Options "--staged" and "--diff" cannot be combined');
   }
 
+  if (dryRun && mock) {
+    throw new CliUsageError('Options "--dry-run" and "--mock" cannot be combined');
+  }
+
   if (values.format !== undefined && !isFormat(values.format)) {
     throw new CliUsageError(
       `Unsupported format "${values.format}". Expected one of: ${FORMATS.join(', ')}`
@@ -144,6 +155,7 @@ export function parseCliArgs(argv: readonly string[]): ParsedCli {
     ...(staged && { staged: true }),
     ...(diff !== undefined && { diff }),
     ...(mock && { mock: true }),
+    ...(dryRun && { dryRun: true }),
   };
 
   return { kind: 'check', options };
