@@ -70,7 +70,16 @@
 
 ## クイックスタート
 
-以下の 3 ステップですぐに `jev-spec` を導入できます。
+**AI によるセットアップ。** Claude Code、Cursor、Codex、Gemini CLI、GitHub Copilot など、[Agent Skills](https://agentskills.io) 対応のクライアント向けです（GitHub CLI v2.90 以降が必要）。
+
+```bash
+gh skill install nozomi-koborinai/jev-spec jev-spec-init
+gh skill install nozomi-koborinai/jev-spec jev-spec-fix
+```
+
+そのうえでエージェントに「jev-spec をセットアップして」と依頼してください。`jev-spec-init` は仕様書とコードの対応付けを行い、要件ごとに焦点を絞った質問を 1 つずつ書き、オフラインで配線を検証して、カバーされていない要件を報告します。`jev-spec-fix` は失敗したチェックの原因を切り分け、何が検証され何が検証されていないかを報告します。
+
+**手動セットアップ。** 以下の 3 ステップですぐに `jev-spec` を導入できます。
 
 ### 1. jev-spec のインストール
 
@@ -106,8 +115,11 @@ export default defineConfig({
         requirementPrefix: 'REQ-AUTH-',
       },
       rubrics: {
-        satisfiesRequirements: noul(
-          'Does the code satisfy functional criteria defined in REQ-AUTH-01 and REQ-AUTH-02?'
+        verifiesSessionTokens: noul(
+          'Does the code satisfy REQ-AUTH-01: the signature of every session token is verified before access to a protected resource is granted?'
+        ),
+        rejectsRevokedTokens: noul(
+          'Does the code satisfy REQ-AUTH-02: a token whose ID is on the revocation list is rejected?'
         ),
         introducesUnspecifiedBehavior: noul(
           'Does the implementation introduce undocumented endpoints, global state mutability, or unauthenticated bypasses?'
@@ -123,7 +135,8 @@ export default defineConfig({
         ]),
       },
       assertions: {
-        satisfiesRequirements: { minProbability: 0.85 },
+        verifiesSessionTokens: { minProbability: 0.85 },
+        rejectsRevokedTokens: { minProbability: 0.85 },
         introducesUnspecifiedBehavior: { maxProbability: 0.15 },
         securityPosture: { allowedChoices: ['secure'], minConfidence: 0.75 },
         implementationCompleteness: { minScore: 1.8 },
@@ -132,6 +145,8 @@ export default defineConfig({
   },
 });
 ```
+
+質問は要件ごとに 1 つずつ、要件 ID を明記して書いてください。複数の要件を 1 つの質問にまとめると、どの要件で失敗したのか分からなくなり、モデルの回答の信頼性も下がります。
 
 ### 3. セマンティック検証の実行
 

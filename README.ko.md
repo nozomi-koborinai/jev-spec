@@ -70,7 +70,16 @@
 
 ## 빠른 시작
 
-단 세 단계로 `jev-spec`을 프로젝트에 도입할 수 있습니다.
+**AI 지원 설정.** Claude Code, Cursor, Codex, Gemini CLI, GitHub Copilot 등 [Agent Skills](https://agentskills.io) 호환 클라이언트용입니다(GitHub CLI v2.90 이상 필요).
+
+```bash
+gh skill install nozomi-koborinai/jev-spec jev-spec-init
+gh skill install nozomi-koborinai/jev-spec jev-spec-fix
+```
+
+그런 다음 에이전트에게 "jev-spec을 설정해 줘"라고 요청하세요. `jev-spec-init`은 명세와 코드를 매핑하고, 요구 사항마다 초점을 좁힌 질문을 하나씩 작성하며, 오프라인으로 연결 상태를 검증하고, 커버되지 않은 요구 사항을 보고합니다. `jev-spec-fix`는 실패한 검사의 원인을 가려내고, 무엇이 검증되었고 무엇이 검증되지 않았는지 보고합니다.
+
+**수동 설정.** 단 세 단계로 `jev-spec`을 프로젝트에 도입할 수 있습니다.
 
 ### 1. jev-spec 설치
 
@@ -106,8 +115,11 @@ export default defineConfig({
         requirementPrefix: 'REQ-AUTH-',
       },
       rubrics: {
-        satisfiesRequirements: noul(
-          'Does the code satisfy functional criteria defined in REQ-AUTH-01 and REQ-AUTH-02?'
+        verifiesSessionTokens: noul(
+          'Does the code satisfy REQ-AUTH-01: the signature of every session token is verified before access to a protected resource is granted?'
+        ),
+        rejectsRevokedTokens: noul(
+          'Does the code satisfy REQ-AUTH-02: a token whose ID is on the revocation list is rejected?'
         ),
         introducesUnspecifiedBehavior: noul(
           'Does the implementation introduce undocumented endpoints, global state mutability, or unauthenticated bypasses?'
@@ -123,7 +135,8 @@ export default defineConfig({
         ]),
       },
       assertions: {
-        satisfiesRequirements: { minProbability: 0.85 },
+        verifiesSessionTokens: { minProbability: 0.85 },
+        rejectsRevokedTokens: { minProbability: 0.85 },
         introducesUnspecifiedBehavior: { maxProbability: 0.15 },
         securityPosture: { allowedChoices: ['secure'], minConfidence: 0.75 },
         implementationCompleteness: { minScore: 1.8 },
@@ -132,6 +145,8 @@ export default defineConfig({
   },
 });
 ```
+
+질문은 요구 사항마다 하나씩, 요구 사항 ID를 명시해서 작성하세요. 여러 요구 사항을 하나의 질문으로 묶으면 어느 것이 실패했는지 알 수 없고, 모델의 답변 신뢰도도 떨어집니다.
 
 ### 3. 시맨틱 검증 실행
 

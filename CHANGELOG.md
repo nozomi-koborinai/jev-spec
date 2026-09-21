@@ -5,8 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Two [Agent Skills](https://agentskills.io) for coding agents, installable with `gh skill install nozomi-koborinai/jev-spec <name>`:
+  - `jev-spec-init` sets jev-spec up in a repository: it maps specifications to code, writes one focused question per requirement, validates the wiring offline, and reports which requirements are not covered.
+  - `jev-spec-fix` works through a failing check: it separates the four possible causes (code, specification, rubric, model) and ends with a report of what was and was not verified.
+- `AGENTS.md` with the conventions for coding agents that work on this repository.
+
 ### Changed
 
+- The Quickstart in the README asks one question per requirement instead of joining `REQ-AUTH-01` and `REQ-AUTH-02` in a single question, in line with the guidance in the new skills.
 - The exported union types no longer contain `any`: `AnyRubric`, `AnyAssertion` and `AnyRubricResult` use `string` for choice keys, and `JevSpecConfig.zones` is typed as the new exported `AnyZoneConfig` instead of `ZoneConfig<any>`. Runtime behaviour is unchanged. Hand-written `JevSpecConfig` objects are now type-checked more strictly (for example, a misspelled assertion option is a compile error).
 
 ### Internal
