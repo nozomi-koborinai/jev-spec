@@ -155,6 +155,8 @@ npx jev-spec check
 
 `jev-spec` 配置文件借助 `defineConfig(...)` 辅助函数提供完整的 TypeScript 类型推导与智能补全。
 
+在向 Jev 发送任何内容之前，配置都会先经过校验。与任何 Rubric 都不匹配的断言键、与 Rubric 类型不符的选项、不存在的选项键，以及超出范围的阈值（例如把 `0.15` 误写成 `maxProbability: 15`），都会以退出码 `2` 终止运行，而不是悄悄生成一个永远不会失败的检查。使用 `defineConfig(...)` 时，TypeScript 会在编辑器中直接提示同样的错误。
+
 ### 核心 DSL 原语
 
 #### noul(question): NoulRubric

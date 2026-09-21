@@ -6,6 +6,7 @@ import {
   type JevEvaluator,
 } from '../evaluator/jev-evaluator.js';
 import { assertRubric } from './assertion-runner.js';
+import { validateConfig } from '../config-validation.js';
 import type {
   AnyRubric,
   JevSpecConfig,
@@ -26,6 +27,8 @@ export async function runVerification(
   config: JevSpecConfig,
   options: RunOptions = {}
 ): Promise<OverallCheckResult> {
+  validateConfig(config);
+
   const cwd = options.cwd ?? process.cwd();
   const evaluator = options.evaluator ?? createJevEvaluator(config.client);
   const startTime = Date.now();
