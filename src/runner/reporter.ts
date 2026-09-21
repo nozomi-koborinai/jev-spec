@@ -1,10 +1,20 @@
 import type { OverallCheckResult, ZoneCheckResult } from '../types.js';
 
+function countSkipped(zones: readonly ZoneCheckResult[]): number {
+  return zones.filter((zone) => zone.skipped).length;
+}
+
 export function formatTerminalReport(result: OverallCheckResult): string {
   const lines: string[] = [];
   lines.push('\n=== jev-spec Verification Report ===\n');
 
   for (const zone of result.zones) {
+    if (zone.skipped) {
+      lines.push(`Zone: ${zone.zoneName} [– SKIPPED]`);
+      lines.push(`  Reason: ${zone.skipReason ?? 'Not evaluated'}\n`);
+      continue;
+    }
+
     const icon = zone.passed ? '✔' : '✖';
     lines.push(`Zone: ${zone.zoneName} [${icon} ${zone.passed ? 'PASSED' : 'FAILED'}]`);
     lines.push(`  Spec files: ${zone.specFiles.join(', ')}`);
@@ -30,9 +40,11 @@ export function formatTerminalReport(result: OverallCheckResult): string {
   }
 
   const overallIcon = result.passed ? '✔' : '✖';
+  const skippedCount = countSkipped(result.zones);
+  const skippedNote = skippedCount > 0 ? ` [${skippedCount} zone(s) skipped]` : '';
   lines.push(`----------------------------------------`);
   lines.push(
-    `Overall: ${overallIcon} ${result.passed ? 'ALL CHECKS PASSED' : 'VERIFICATION FAILED'} (${result.totalDurationMs}ms, $${result.totalEstimatedCostUsd.toFixed(5)})`
+    `Overall: ${overallIcon} ${result.passed ? 'ALL CHECKS PASSED' : 'VERIFICATION FAILED'}${skippedNote} (${result.totalDurationMs}ms, $${result.totalEstimatedCostUsd.toFixed(5)})`
   );
 
   return lines.join('\n');
@@ -45,6 +57,11 @@ export function formatMarkdownReport(result: OverallCheckResult): string {
   lines.push('| :--- | :---: | :---: | :---: | :---: |');
 
   for (const zone of result.zones) {
+    if (zone.skipped) {
+      lines.push(`| \`${zone.zoneName}\` | ⏭️ SKIPPED | – | ${zone.durationMs}ms | $0.00000 |`);
+      continue;
+    }
+
     const passedCount = zone.evaluations.filter((e) => e.passed).length;
     const totalCount = zone.evaluations.length;
     const status = zone.passed ? '✅ PASS' : '❌ FAIL';
@@ -57,6 +74,12 @@ export function formatMarkdownReport(result: OverallCheckResult): string {
 
   for (const zone of result.zones) {
     lines.push(`#### Zone: \`${zone.zoneName}\`\n`);
+
+    if (zone.skipped) {
+      lines.push(`Skipped: ${zone.skipReason ?? 'Not evaluated'}\n`);
+      continue;
+    }
+
     lines.push('| Rubric | Type | Outcome | Status |');
     lines.push('| :--- | :---: | :--- | :---: |');
 
