@@ -494,8 +494,6 @@ The push step is a full run on purpose: on `main`, `origin/main...HEAD` is an em
 | **Base URL SSRF Protection** | By default, requests are routed exclusively to official TypeSafe AI endpoints (`https://api.typesafe.ai`). Custom API base URLs are blocked unless `allowCustomBaseUrl: true` is explicitly configured. |
 | **Resource Bounds** | Prevents denial-of-service and runaway memory consumption by enforcing strict limits: max 500 files per scan, 2MB file size cap, and bounded character truncation per evaluation prompt. |
 
-For detailed security disclosures and reporting policies, see [SECURITY.md](./SECURITY.md).
-
 ---
 
 ## Contributing & License

@@ -494,7 +494,6 @@ push 단계는 의도적으로 전체를 검사합니다. `main`에서는 `origi
 | **Base URL SSRF 방어** | 기본적으로 모든 요청은 공식 TypeSafe AI 엔드포인트(`https://api.typesafe.ai`)로만 라우팅됩니다. `allowCustomBaseUrl: true`가 명시적으로 설정되지 않는 한 커스텀 API 베이스 URL 접근이 차단됩니다. |
 | **자원 소진 방지 제한** | 단일 스캔당 최대 500개 파일, 파일당 2MB 크기 제한, 프롬프트당 글자 수 절단 제한을 강제하여 DoS 공격 및 메모리 고갈을 방지합니다. |
 
-자세한 보안 정책 및 취약점 제보 방법은 [SECURITY.md](./SECURITY.md)를 참고하세요.
 
 ---
 

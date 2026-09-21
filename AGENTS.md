@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Instructions for coding agents working on this repository. For what the tool does and how it is used, read `README.md`; for the threat model, `SECURITY.md`.
+Instructions for coding agents working on this repository. For what the tool does and how it is used, read `README.md`.
 
 ## What matters most
 
@@ -18,7 +18,7 @@ jev-spec enforces a **gate**: it checks source code against Markdown specs and f
 1. **Fail closed.** Invalid configuration, malformed evaluator answers and unknown CLI arguments are errors (exit code 2), never a silent pass or a silent default. A new config option needs validation in `src/config-validation.ts`.
 2. **Bug fixes are test-first.** Write the failing test, watch it fail for the expected reason, then fix. Code that shells out to git needs a test against a real temporary repository (`test/git-test-utils.ts`), not only a test of the output parser.
 3. **Four READMEs.** `README.md`, `README.ja.md`, `README.zh.md` and `README.ko.md` are edited together and stay structurally identical: same headings, same code blocks, same order.
-4. **Security invariants.** Every path that comes from the configuration or the CLI goes through `assertInsideRoot`. Git is called with `execFile` (no shell), and revisions go through `assertGitRevision`. If you change one of these, update `SECURITY.md` and the security table in the READMEs in the same pull request.
+4. **Security invariants.** Every path that comes from the configuration or the CLI goes through `assertInsideRoot`. Git is called with `execFile` (no shell), and revisions go through `assertGitRevision`. If you change one of these, update the security table in the READMEs in the same pull request.
 5. **The TypeSafe SDK is 0.x.** Check `node_modules/@typesafe-ai/sdk/dist/index.d.mts` and <https://docs.typesafe.ai> before relying on a response shape, a limit or a price. Do not guess.
 6. **Changelog.** User-visible changes go under *Unreleased* in `CHANGELOG.md`.
 7. **Skills are product surface.** `skills/` holds the Agent Skills shipped to jev-spec users. When a CLI flag, a config option or the report format changes, update the affected skill in the same pull request.
