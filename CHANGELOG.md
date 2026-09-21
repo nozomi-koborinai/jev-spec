@@ -20,6 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The documentation no longer promises what it cannot show. The security table is headed "What It Does" instead of "Implementation Guarantee", and the row about prompt boundaries says that the tags and the framing note are a mitigation: TypeSafe documents that content which argues for its own classification, such as a comment that claims compliance, can move the answer. `SECURITY.md` says the same, and no longer claims that the note is prepended to the questions (it is part of the state). "Know the limits" now says that Jev is most accurate in English and less accurate in other languages, CJK included. Thresholds are *tuned*, not *calibrated*: calibration is a property of the model's probabilities, in the READMEs and in `jev-spec-init`.
 - **Breaking for custom evaluators:** `JevEvaluator.evaluate()` resolves to `{ answers, model? }` instead of the bare record of answers, so that an evaluator can report which model answered. `LiveJevEvaluator` accepts a client as a second constructor argument, which makes it testable without the network.
 
+### Fixed
+
+- An unexpected internal error made the process exit with Node's default code `1`, which jev-spec reserves for a violated assertion. Every error now exits with `2`.
+
 ### Upgrade notes
 
 - Rename `zones` to `targets` in `jev-spec.config.*`, and `--zone` to `--target` in scripts, hooks and workflows.
