@@ -319,7 +319,7 @@ Without `client.model`, jev-spec asks `jev-latest`, an alias that TypeSafe moves
 Check every target declared in your configuration:
 
 ```bash
-# Instant check via Bun
+# Check via Bun
 bunx jev-spec check
 
 # Check via Node.js
@@ -397,19 +397,19 @@ npx jev-spec check --format markdown >> "$GITHUB_STEP_SUMMARY"
 
 `jev-spec` provides first-class dual-runtime support across modern **Node.js** and **Bun**. Every pull request is validated against both runtimes across all supported versions in automated CI.
 
-| Runtime | Supported Versions | Status | Best For | Typical Cold Start |
-| :--- | :--- | :--- | :--- | :--- |
-| **Bun** | `>= 1.2` (Latest) | Tier 1 / Supported | Ultra-fast pre-commit hooks, staged checks, local dev loops | **< 100ms** |
-| **Node.js** | `>= 22.0.0` (LTS 22) | Tier 1 / Supported | Standard production CI/CD pipelines, containerized runners | ~350ms – 500ms |
-| **Node.js** | `>= 24.0.0` (Current 24) | Tier 1 / Supported | Modern cutting-edge Node runtime environments | ~350ms – 500ms |
+| Runtime | Supported Versions | Status | Best For |
+| :--- | :--- | :--- | :--- |
+| **Bun** | `>= 1.2` (Latest) | Tier 1 / Supported | Pre-commit hooks, local development loops |
+| **Node.js** | `>= 22.0.0` (LTS 22) | Tier 1 / Supported | CI/CD pipelines, containerized runners |
+| **Node.js** | `>= 24.0.0` (Current 24) | Tier 1 / Supported | Current Node runtime environments |
 
-### Why Bun for Pre-Commit Hooks?
+### Which runtime for a pre-commit hook?
 
-Because Jev evaluates decisions in **sub-second time (70ms – 400ms)**, runtime startup overhead represents the majority of wall-clock time in local developer workflows:
+Either. Measured on the maintainer's laptop against this repository (Node 22.23, Bun 1.4): the CLI starts in about 0.1 s on Node and about 0.05 s on Bun, and a dry run of all 8 targets takes 0.15 s and 0.08 s. A live check of one target takes 0.3 to 0.9 s, so the request to the model, not the runtime, decides how long a hook takes:
 
-- **Instant Execution**: `bunx jev-spec check --staged` starts in **under 100ms** — more than 3x faster than traditional runner startups.
-- **Zero-Friction Git Hooks**: Developers can run full semantic assertions on staged changes in under half a second combined.
-- **Native TypeScript Execution**: Loads `jev-spec.config.ts` directly without transpilation overhead.
+- **What a hook costs**: `jev-spec check --staged` checks only the targets that the commit touches, each in one request. A commit that touches no target sends nothing and needs no API key.
+- **`bunx` runs Node by default**: the CLI has a `#!/usr/bin/env node` shebang, and `bunx jev-spec` honours it. Use `bunx --bun jev-spec` to run it on Bun.
+- **TypeScript configuration**: `jev-spec.config.ts` is loaded directly on both runtimes.
 
 ---
 
