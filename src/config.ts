@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { createJiti } from 'jiti';
 import type { JevSpecConfig } from './types.js';
 import { assertInsideRoot } from './context/path-security.js';
@@ -26,21 +26,21 @@ export async function findConfigFile(cwd: string = process.cwd()): Promise<strin
   return null;
 }
 
-async function importConfigModule(resolvedPath: string): Promise<unknown> {
-  if (resolvedPath.endsWith('.ts')) {
-    const jiti = createJiti(import.meta.url, {
-      interopDefault: true,
-    });
-    const imported = await jiti.import(resolvedPath);
-    if (imported && typeof imported === 'object' && 'default' in imported) {
-      return (imported as { default: unknown }).default;
-    }
-    return imported;
-  }
+/** Entry point of the running jev-spec package (dist/index.js next to this file). */
+const SELF_ENTRY = fileURLToPath(new URL('./index.js', import.meta.url));
 
-  const fileUrl = pathToFileURL(resolvedPath).href;
-  const imported = await import(fileUrl);
-  return imported.default ?? imported;
+async function importConfigModule(resolvedPath: string): Promise<unknown> {
+  // `import { defineConfig } from 'jev-spec'` must resolve even when jev-spec is not installed
+  // in the project (npx / bunx / global install), so the specifier is aliased to this package.
+  const jiti = createJiti(import.meta.url, {
+    interopDefault: true,
+    alias: { 'jev-spec': SELF_ENTRY },
+  });
+  const imported = await jiti.import(resolvedPath);
+  if (imported && typeof imported === 'object' && 'default' in imported) {
+    return (imported as { default: unknown }).default;
+  }
+  return imported;
 }
 
 export async function loadConfig(
