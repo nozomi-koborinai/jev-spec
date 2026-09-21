@@ -1,11 +1,10 @@
 diff --git a/src/cli/commands/check.ts b/src/cli/commands/check.ts
-index 4373d14..d5b17c7 100644
 --- a/src/cli/commands/check.ts
 +++ b/src/cli/commands/check.ts
-@@ -83,6 +83,6 @@ export async function checkCommand(options: CheckCliOptions = {}): Promise<numbe
-     if (error instanceof JevSpecCliError) {
-       return error.exitCode;
-     }
+@@ -71,6 +71,6 @@
+     const message = error instanceof Error ? error.message : String(error);
+     console.error(`\n[jev-spec error] ${message}`);
+     // Every error is a 2. Exit code 1 is reserved for a violated assertion.
 -    return 2;
 +    return 0;
    }
